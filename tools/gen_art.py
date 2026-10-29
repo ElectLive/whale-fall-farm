@@ -662,6 +662,48 @@ def crop_star(stage: int) -> Image.Image:
     return im
 
 
+def crop_chili(stage: int) -> Image.Image:
+    bush = (79, 154, 74, 255)
+    dark = (58, 115, 57, 255)
+    light = (122, 186, 96, 255)
+    red = (214, 76, 84, 255)
+    red2 = (168, 48, 62, 255)
+    white = (245, 243, 232, 255)
+    im, d = new(16, 16)
+    if stage == 0:
+        px(d, 7, 12, dark)
+        px(d, 8, 11, bush)
+        px(d, 6, 11, light)
+        px(d, 9, 12, light)
+    elif stage == 1:
+        disc(d, 8, 11, 4, 3, dark)
+        disc(d, 8, 10, 3.5, 2.5, bush)
+        px(d, 6, 8, light)
+        px(d, 10, 9, light)
+        px(d, 5, 11, light)
+    elif stage == 2:
+        disc(d, 8, 10, 5, 4, dark)
+        disc(d, 8, 9.5, 4.5, 3.5, bush)
+        for x, y in ((4, 8), (12, 8), (8, 6), (5, 12), (11, 12)):
+            px(d, x, y, light)
+        for x, y in ((6, 7), (10, 6), (9, 11)):
+            px(d, x, y, white)
+            px(d, x + 1, y, (232, 226, 170, 255))
+    else:
+        disc(d, 8, 9, 5.5, 4.5, dark)
+        disc(d, 8, 8.5, 4.5, 3.5, bush)
+        for x, y in ((3, 9), (13, 9), (8, 5), (4, 13), (12, 13)):
+            px(d, x, y, light)
+        # hanging chilies
+        for x, y in ((5, 10), (9, 11), (11, 9)):
+            box(d, x, y, x + 1, y + 3, red)
+            px(d, x, y + 1, (240, 120, 120, 255))
+            px(d, x + 1, y + 3, red2)
+            px(d, x, y - 1, dark)
+        px(d, 7, 4, white)
+    return im
+
+
 def crop_moonwheat(stage: int) -> Image.Image:
     stem = (132, 172, 154, 255)
     leaf = (164, 208, 182, 255)
@@ -794,7 +836,8 @@ def seed_icon(kind: str) -> Image.Image:
     paper = (226, 208, 168, 255)
     d.polygon([(4, 4), (12, 4), (12, 12), (8, 14), (4, 12)], fill=paper)
     d.line([(4, 4), (12, 4)], fill=(168, 142, 100, 255))
-    col = {"radish": C["red"], "pumpkin": C["orange"], "star": C["cyan"], "moon": C["cyan"]}[kind]
+    col = {"radish": C["red"], "pumpkin": C["orange"], "star": C["cyan"],
+           "moon": C["cyan"], "chili": C["red"]}[kind]
     if kind == "radish":
         disc(d, 8, 8, 2.5, 2, col)
         px(d, 8, 5, C["green"])
@@ -811,6 +854,12 @@ def seed_icon(kind: str) -> Image.Image:
         px(d, 7, 5, C["green"])
         px(d, 9, 5, C["green"])
         px(d, 10, 7, C["gold"])
+    elif kind == "chili":
+        disc(d, 8, 9, 2.5, 3.5, col)
+        disc(d, 7, 8, 1.5, 2, (240, 120, 120, 255))
+        px(d, 8, 4, C["green2"])
+        px(d, 7, 5, C["green"])
+        px(d, 9, 5, C["green"])
     else:
         disc(d, 8, 8, 2, 2, C["gold"])
         for dx, dy in ((0, -3), (3, 0), (0, 3), (-3, 0)):
@@ -1184,6 +1233,7 @@ def main() -> None:
         save(crop_pumpkin(i), "crops", f"pumpkin_{i}.png")
         save(crop_star(i), "crops", f"star_{i}.png")
         save(crop_moonwheat(i), "crops", f"moonwheat_{i}.png")
+        save(crop_chili(i), "crops", f"chili_{i}.png")
     save(crop_dead(), "crops", "dead.png")
     # ui
     save(panel(False), "ui", "panel.png")
@@ -1194,7 +1244,7 @@ def main() -> None:
     save(coin(), "ui", "coin.png")
     save(sun_icon(), "ui", "sun.png")
     save(moon_icon(), "ui", "moon.png")
-    for k in ("radish", "pumpkin", "star", "moon"):
+    for k in ("radish", "pumpkin", "star", "moon", "chili"):
         save(seed_icon(k), "ui", f"seed_{k}.png")
     for k in ("hoe", "can", "scythe", "clock"):
         save(tool_icon(k), "ui", f"icon_{k}.png")

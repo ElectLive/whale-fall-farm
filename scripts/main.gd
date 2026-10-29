@@ -50,7 +50,7 @@ var run_gold := 0
 var day_gold := 0
 var kills := 0
 var day_kills := 0
-var seeds := {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0}
+var seeds := {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0, "chili": 0}
 var selected_seed := 0
 var rainy := false
 var mods := {}
@@ -293,7 +293,7 @@ func start_new_run(seed_value: int = 0) -> void:
 	day_kills = 0
 	endless = false
 	_run_recorded = false
-	seeds = {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0}
+	seeds = {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0, "chili": 0}
 	selected_seed = 0
 	rainy = false
 	relic_ids.clear()
@@ -775,6 +775,8 @@ func _on_shop_buy(index: int) -> void:
 			seeds["star"] = int(seeds["star"]) + 1
 		"seed_moon":
 			seeds["moonwheat"] = int(seeds["moonwheat"]) + 1
+		"seed_chili":
+			seeds["chili"] = int(seeds["chili"]) + 2
 		"heal":
 			if player:
 				player.heal(2)
@@ -824,6 +826,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_select_seed(2)
 		KEY_4:
 			_select_seed(3)
+		KEY_5:
+			_select_seed(4)
 		KEY_F:
 			toggle_fullscreen()
 
@@ -1432,6 +1436,16 @@ func run_selftest() -> int:
 	interact()
 	_check(int(seeds["radish"]) == 0, "last radish seed is planted")
 	_check(selected_seed == 1, "seed belt auto-switches to a stocked crop")
+
+	# fifth crop: chili
+	player.position = farm.tile_center(Vector2i(6, 3))
+	player.facing = Vector2.RIGHT
+	interact()
+	seeds["chili"] = 1
+	selected_seed = 4
+	interact()
+	var chili_crop: Crop = crops[crops.size() - 1]
+	_check(chili_crop.kind == "chili", "fifth seed slot plants chili")
 
 	# night + enemy death + dawn
 	start_night()

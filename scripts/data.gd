@@ -29,8 +29,13 @@ const CROPS := {
 		"desc": "只在夜里生长，白天会打盹。",
 		"night_only": true,
 	},
+	"chili": {
+		"name": "辣椒", "seed_cost": 11, "value": 30, "grow": 11.0,
+		"seed_drop": 0.30, "color": Color("#e2556b"),
+		"desc": "辣得怪物跳脚。",
+	},
 }
-const CROP_ORDER := ["radish", "pumpkin", "star", "moonwheat"]
+const CROP_ORDER := ["radish", "pumpkin", "star", "moonwheat", "chili"]
 
 const ENEMIES := {
 	"slime": {
@@ -61,6 +66,7 @@ const SHOP_OFFERS := [
 	{"id": "seed_pumpkin", "name": "南瓜种子 ×2", "desc": "沉甸甸的稳健收益", "price": 14, "icon": "seed_pumpkin"},
 	{"id": "seed_star", "name": "星露花种子 ×1", "desc": "很贵，但值得", "price": 18, "icon": "seed_star"},
 	{"id": "seed_moon", "name": "月光麦种子 ×1", "desc": "只在夜里生长", "price": 16, "icon": "seed_moon"},
+	{"id": "seed_chili", "name": "辣椒种子 ×2", "desc": "中速回本，辣味十足", "price": 12, "icon": "seed_chili"},
 	{"id": "heal", "name": "潮汐药汤", "desc": "回复 2 点生命", "price": 8, "icon": "heart_full"},
 	{"id": "maxhp", "name": "鲸骨护心镜", "desc": "生命上限 +1，回复 1", "price": 24, "icon": "heart_full"},
 ]

@@ -28,6 +28,12 @@ const TEX := {
 		preload("res://assets/generated/crops/moonwheat_2.png"),
 		preload("res://assets/generated/crops/moonwheat_3.png"),
 	],
+	"chili": [
+		preload("res://assets/generated/crops/chili_0.png"),
+		preload("res://assets/generated/crops/chili_1.png"),
+		preload("res://assets/generated/crops/chili_2.png"),
+		preload("res://assets/generated/crops/chili_3.png"),
+	],
 }
 const GLOW := preload("res://assets/generated/fx/glow.png")
 
