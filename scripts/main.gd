@@ -36,6 +36,7 @@ var end_screen: EndScreen
 var pause_screen: PauseScreen
 
 var player: Player
+var pet: PetWhale
 var enemies: Array[Enemy] = []
 var crops: Array[Crop] = []
 var relic_ids: Array[String] = []
@@ -71,6 +72,7 @@ var spawn_timer := 0.0
 var enrage_done := false
 var run_active := false
 var endless := false
+var daily_mode := false
 var _run_recorded := false
 var test_mode := false
 var _shake := 0.0
@@ -248,6 +250,7 @@ func _build_ui() -> void:
 
 func _connect_ui() -> void:
 	title_screen.start_requested.connect(func() -> void: start_new_run())
+	title_screen.daily_requested.connect(_start_daily)
 	title_screen.codex_requested.connect(_show_codex)
 	title_screen.quit_requested.connect(func() -> void: get_tree().quit())
 	codex_screen.closed.connect(_hide_codex)
@@ -262,6 +265,9 @@ func _connect_ui() -> void:
 	pause_screen.toggle_music.connect(_toggle_music)
 	pause_screen.toggle_sfx.connect(_toggle_sfx)
 	pause_screen.toggle_vibration.connect(_toggle_vibration)
+	pause_screen.toggle_shake.connect(_toggle_shake)
+	pause_screen.toggle_flash.connect(_toggle_flash)
+	pause_screen.toggle_autoaim.connect(_toggle_autoaim)
 	pause_screen.toggle_fullscreen.connect(_toggle_fullscreen_from_pause)
 	hud.seed_selected.connect(_select_seed)
 
@@ -321,10 +327,20 @@ func _hide_codex() -> void:
 	title_screen.visible = true
 
 
+func _start_daily() -> void:
+	var d := Time.get_date_dict_from_system()
+	var date_text := "%04d-%02d-%02d" % [int(d["year"]), int(d["month"]), int(d["day"])]
+	var seed_value := int("%04d%02d%02d" % [int(d["year"]), int(d["month"]), int(d["day"])])
+	start_new_run(seed_value)
+	daily_mode = true
+	hud.banner("每日挑战 · %s" % date_text, Color("#7ee3d4"), 1.6)
+
+
 func start_new_run(seed_value: int = 0) -> void:
 	_clear_run()
 	run_active = true
 	fireflies.emitting = false
+	daily_mode = false
 	day = 1
 	gold = 18
 	run_gold = 0
@@ -364,6 +380,11 @@ func start_new_run(seed_value: int = 0) -> void:
 	entities.add_child(player)
 	player.died.connect(_on_player_signal_died)
 
+	pet = PetWhale.new()
+	pet.setup(self)
+	pet.position = player.position + Vector2(-18, 10)
+	entities.add_child(pet)
+
 	state = State.DAY
 	day_setup()
 	Audio.play_music("day")
@@ -390,6 +411,9 @@ func _clear_run() -> void:
 	if player != null and is_instance_valid(player):
 		player.queue_free()
 	player = null
+	if pet != null and is_instance_valid(pet):
+		pet.queue_free()
+	pet = null
 	for child in fx.get_children():
 		child.queue_free()
 	night_queue.clear()
@@ -508,7 +532,7 @@ func _process(delta: float) -> void:
 		lightning_t -= delta
 		if lightning_t <= 0.0:
 			lightning_t = rng.randf_range(3.5, 8.0)
-			lightning_rect.color = Color(0.95, 0.97, 1.0, 0.55)
+			lightning_rect.color = Color(0.95, 0.97, 1.0, 0.20 if SaveGame.reduce_flash else 0.55)
 			var flash := create_tween()
 			flash.tween_property(lightning_rect, "color:a", 0.0, 0.3)
 			Audio.sfx("explosion", 0.55, -12.0)
@@ -828,6 +852,13 @@ func _finish_run(victory: bool) -> void:
 	Audio.stop_ambience()
 	Audio.sfx("victory" if victory else "gameover", 1.0, -2.0)
 	var is_best := day > SaveGame.best_day
+	if daily_mode:
+		var d := Time.get_date_dict_from_system()
+		var date_text := "%04d-%02d-%02d" % [int(d["year"]), int(d["month"]), int(d["day"])]
+		if day > SaveGame.daily_best_day or SaveGame.daily_best_date != date_text:
+			SaveGame.daily_best_day = maxi(SaveGame.daily_best_day, day) if SaveGame.daily_best_date == date_text else day
+			SaveGame.daily_best_date = date_text
+			SaveGame.save_data()
 	if not _run_recorded:
 		if not test_mode:
 			SaveGame.record_run(day, kills, run_gold)
@@ -1014,10 +1045,29 @@ func _toggle_vibration() -> void:
 	_sync_pause_toggles()
 
 
+func _toggle_shake() -> void:
+	SaveGame.screen_shake_on = not SaveGame.screen_shake_on
+	SaveGame.save_data()
+	_sync_pause_toggles()
+
+
+func _toggle_flash() -> void:
+	SaveGame.reduce_flash = not SaveGame.reduce_flash
+	SaveGame.save_data()
+	_sync_pause_toggles()
+
+
+func _toggle_autoaim() -> void:
+	SaveGame.auto_aim = not SaveGame.auto_aim
+	SaveGame.save_data()
+	_sync_pause_toggles()
+
+
 func _sync_pause_toggles() -> void:
 	if pause_screen.visible:
 		pause_screen.set_toggles(SaveGame.music_on, SaveGame.sfx_on,
-			DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, SaveGame.vibration_on)
+			DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, SaveGame.vibration_on,
+			SaveGame.screen_shake_on, SaveGame.reduce_flash, SaveGame.auto_aim)
 
 
 func _toggle_pause() -> void:
@@ -1035,7 +1085,8 @@ func _toggle_pause() -> void:
 		var chosen: Array = []
 		for id in relic_ids:
 			chosen.append(GameData.relic_by_id(id))
-		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on, is_mobile, SaveGame.vibration_on)
+		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on, is_mobile,
+			SaveGame.vibration_on, SaveGame.screen_shake_on, SaveGame.reduce_flash, SaveGame.auto_aim)
 		Audio.sfx("click")
 
 
@@ -1296,6 +1347,8 @@ func _on_player_signal_died() -> void:
 
 # ------------------------------------------------------------------ helpers
 func shake(amount: float) -> void:
+	if not SaveGame.screen_shake_on:
+		return
 	_shake = maxf(_shake, amount)
 
 
@@ -1563,6 +1616,7 @@ func run_selftest() -> int:
 	_check(state == State.DAY, "run starts in DAY state")
 	_check(farm.tiles.size() == GameData.FARM_W * GameData.FARM_H, "farm grid size")
 	_check(player != null, "player spawned")
+	_check(pet != null, "pet whale spawned")
 	_check(gold == 18, "starting gold is 18")
 
 	# farming chain: till -> plant -> water -> grow -> harvest
@@ -1624,6 +1678,16 @@ func run_selftest() -> int:
 	_check(frog.kind == "frog", "frog enemy spawns")
 	frog.take_damage(999, Vector2.RIGHT)
 	_check(enemies.is_empty(), "frog can be killed")
+
+	# pet whale attacks nearby monsters
+	if pet:
+		pet.position = Vector2(52, 52)
+		var pet_target := _spawn_enemy_at("slime", Vector2(64, 52))
+		var pet_hp := pet_target.hp
+		pet.atk_cd = 0.0
+		pet.try_attack()
+		_check(pet_target.hp < pet_hp, "pet whale attacks nearby monsters")
+		pet_target.take_damage(999, Vector2.RIGHT)
 
 	# armored beetle
 	var beetle := _spawn_enemy_at("beetle", Vector2(72, 52))

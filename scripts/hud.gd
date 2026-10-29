@@ -344,7 +344,7 @@ func _seed_icon_id(crop_id: String) -> String:
 
 
 func flash_damage() -> void:
-	damage_flash.color.a = 0.35
+	damage_flash.color.a = 0.12 if SaveGame.reduce_flash else 0.35
 	var tw := create_tween()
 	tw.tween_property(damage_flash, "color:a", 0.0, 0.35)
 

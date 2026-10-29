@@ -9,6 +9,11 @@ var total_gold := 0
 var music_on := true
 var sfx_on := true
 var vibration_on := true
+var screen_shake_on := true
+var reduce_flash := false
+var auto_aim := false
+var daily_best_day := 0
+var daily_best_date := ""
 var achievements: Array[String] = []
 var crops_harvested := 0
 var enemies_killed := 0
@@ -46,6 +51,11 @@ func load_data() -> void:
 	music_on = bool(cfg.get_value("settings", "music_on", true))
 	sfx_on = bool(cfg.get_value("settings", "sfx_on", true))
 	vibration_on = bool(cfg.get_value("settings", "vibration_on", true))
+	screen_shake_on = bool(cfg.get_value("settings", "screen_shake_on", true))
+	reduce_flash = bool(cfg.get_value("settings", "reduce_flash", false))
+	auto_aim = bool(cfg.get_value("settings", "auto_aim", false))
+	daily_best_day = int(cfg.get_value("records", "daily_best_day", 0))
+	daily_best_date = String(cfg.get_value("records", "daily_best_date", ""))
 	crops_harvested = int(cfg.get_value("records", "crops_harvested", 0))
 	enemies_killed = int(cfg.get_value("records", "enemies_killed", 0))
 	golden_harvested = int(cfg.get_value("records", "golden_harvested", 0))
@@ -78,6 +88,11 @@ func save_data() -> void:
 	cfg.set_value("settings", "music_on", music_on)
 	cfg.set_value("settings", "sfx_on", sfx_on)
 	cfg.set_value("settings", "vibration_on", vibration_on)
+	cfg.set_value("settings", "screen_shake_on", screen_shake_on)
+	cfg.set_value("settings", "reduce_flash", reduce_flash)
+	cfg.set_value("settings", "auto_aim", auto_aim)
+	cfg.set_value("records", "daily_best_day", daily_best_day)
+	cfg.set_value("records", "daily_best_date", daily_best_date)
 	cfg.set_value("records", "crops_harvested", crops_harvested)
 	cfg.set_value("records", "enemies_killed", enemies_killed)
 	cfg.set_value("records", "golden_harvested", golden_harvested)

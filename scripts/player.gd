@@ -135,7 +135,20 @@ func attack() -> void:
 		return
 	attack_cd = 0.38 / float(game.aspd_mult())
 	var dir := facing
-	if not game.is_mobile and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	if SaveGame.auto_aim:
+		var best: Enemy = null
+		var best_d := 90.0
+		for e in game.enemies:
+			if not is_instance_valid(e) or e.dead:
+				continue
+			var d: float = global_position.distance_to(e.global_position)
+			if d < best_d:
+				best_d = d
+				best = e
+		if best != null:
+			dir = (best.global_position - global_position).normalized()
+			facing = _snap_facing(dir)
+	elif not game.is_mobile and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		var m := get_global_mouse_position()
 		var d := m - global_position
 		if d.length() > 2.0:

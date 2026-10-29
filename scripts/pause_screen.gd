@@ -7,12 +7,18 @@ signal title_requested
 signal toggle_music
 signal toggle_sfx
 signal toggle_vibration
+signal toggle_shake
+signal toggle_flash
+signal toggle_autoaim
 signal toggle_fullscreen
 
 var _list: VBoxContainer
 var _music_btn: Button
 var _sfx_btn: Button
 var _vib_btn: Button
+var _shake_btn: Button
+var _flash_btn: Button
+var _aim_btn: Button
 var _fs_btn: Button
 
 
@@ -23,7 +29,8 @@ func _ready() -> void:
 
 
 func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobile: bool = false,
-		vibration_on: bool = true) -> void:
+		vibration_on: bool = true, screen_shake_on: bool = true, reduce_flash: bool = false,
+		auto_aim: bool = false) -> void:
 	for c in get_children():
 		c.queue_free()
 	visible = true
@@ -76,6 +83,22 @@ func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobil
 	_fs_btn.pressed.connect(func() -> void: toggle_fullscreen.emit())
 	_fs_btn.visible = not mobile
 	toggles.add_child(_fs_btn)
+	var toggles2 := HBoxContainer.new()
+	toggles2.alignment = BoxContainer.ALIGNMENT_CENTER
+	toggles2.add_theme_constant_override("separation", 10)
+	v.add_child(toggles2)
+	_shake_btn = UiKit.button("震屏：开", 18)
+	_shake_btn.custom_minimum_size = Vector2(150, 42)
+	_shake_btn.pressed.connect(func() -> void: toggle_shake.emit())
+	toggles2.add_child(_shake_btn)
+	_flash_btn = UiKit.button("闪光：强", 18)
+	_flash_btn.custom_minimum_size = Vector2(150, 42)
+	_flash_btn.pressed.connect(func() -> void: toggle_flash.emit())
+	toggles2.add_child(_flash_btn)
+	_aim_btn = UiKit.button("自动瞄准：关", 18)
+	_aim_btn.custom_minimum_size = Vector2(150, 42)
+	_aim_btn.pressed.connect(func() -> void: toggle_autoaim.emit())
+	toggles2.add_child(_aim_btn)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 20)
@@ -92,15 +115,23 @@ func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobil
 		Audio.sfx("click")
 		title_requested.emit())
 	row.add_child(home)
-	set_toggles(music_on, sfx_on, DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, vibration_on)
+	set_toggles(music_on, sfx_on, DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN,
+		vibration_on, screen_shake_on, reduce_flash, auto_aim)
 
 
-func set_toggles(music_on: bool, sfx_on: bool, fullscreen: bool, vibration_on: bool = true) -> void:
+func set_toggles(music_on: bool, sfx_on: bool, fullscreen: bool, vibration_on: bool = true,
+		screen_shake_on: bool = true, reduce_flash: bool = false, auto_aim: bool = false) -> void:
 	if _music_btn:
 		_music_btn.text = "音乐：开" if music_on else "音乐：关"
 	if _sfx_btn:
 		_sfx_btn.text = "音效：开" if sfx_on else "音效：关"
 	if _vib_btn:
 		_vib_btn.text = "震动：开" if vibration_on else "震动：关"
+	if _shake_btn:
+		_shake_btn.text = "震屏：开" if screen_shake_on else "震屏：关"
+	if _flash_btn:
+		_flash_btn.text = "闪光：弱" if reduce_flash else "闪光：强"
+	if _aim_btn:
+		_aim_btn.text = "自动瞄准：开" if auto_aim else "自动瞄准：关"
 	if _fs_btn:
 		_fs_btn.text = "全屏：开" if fullscreen else "全屏：关"

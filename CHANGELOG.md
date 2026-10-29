@@ -3,6 +3,20 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v1.6.0 — 2026-10-29
+
+### Added
+
+- **Daily challenge**: title button starts a date-seeded run (YYYYMMDD) with a local best-day record.
+- **Pet whale 小鲸鱼**: follows the farmer, attacks nearby monsters every ~1.8s, can gain levels from harvests.
+- **Accessibility/control settings** in pause: screen-shake toggle, reduced flash, auto-aim.
+- Second pause settings row; daily button on title; pet sprite generated procedurally.
+
+### Changed
+
+- Pause menu accepts shake/flash/auto-aim state and persists all settings.
+- Auto-aim picks the nearest monster within 90px for scythe swings.
+
 ## v1.5.0 — 2026-10-29
 
 ### Added
@@ -137,7 +151,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.5.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.6.0...main
+[v1.6.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.6.0
 [v1.5.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.5.0
 [v1.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.4.0
 [v1.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.3.0

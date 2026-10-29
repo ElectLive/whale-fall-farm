@@ -570,6 +570,32 @@ def frog_sheet() -> Image.Image:
     return sheet
 
 
+def pet_whale_frame(step: int) -> Image.Image:
+    im, d = new(16, 16)
+    bob = step
+    body = (74, 138, 190, 255)
+    light = (122, 186, 222, 255)
+    belly = (206, 230, 240, 255)
+    disc(d, 8, 11 + bob, 6, 3.5, body)
+    disc(d, 8, 11 + bob, 5, 2.5, light)
+    disc(d, 8, 13 + bob, 3.5, 1.5, belly)
+    d.polygon([(2, 10 + bob), (0, 8 + bob), (3, 8 + bob)], fill=body)
+    px(d, 10, 10 + bob, C["ink"])
+    px(d, 6, 10 + bob, C["white"])
+    # little water spout
+    px(d, 8, 6 + bob, C["cyan"])
+    px(d, 7, 5 + bob, C["cyan2"])
+    px(d, 9, 5 + bob, C["cyan2"])
+    return im
+
+
+def pet_whale_sheet() -> Image.Image:
+    sheet, _ = new(32, 16)
+    for i in range(2):
+        sheet.paste(pet_whale_frame(i), (i * 16, 0))
+    return sheet
+
+
 def rain_drop() -> Image.Image:
     im, d = new(2, 8)
     for y in range(8):
@@ -1291,6 +1317,7 @@ def main() -> None:
     save(boss_sheet(), "chars", "boss_pumpkin.png")
     save(frog_sheet(), "chars", "frog.png")
     save(beetle_sheet(), "chars", "beetle.png")
+    save(pet_whale_sheet(), "chars", "pet_whale.png")
     save(shadow(), "chars", "shadow.png")
     # crops
     for i in range(4):

@@ -3,6 +3,7 @@ extends Control
 ## Title screen shown on boot.
 
 signal start_requested
+signal daily_requested
 signal codex_requested
 signal quit_requested
 
@@ -53,39 +54,47 @@ func _build() -> void:
 	add_child(tag)
 
 	var start := UiKit.button("开始新的一局", 30)
-	start.position = Vector2(100, 330)
-	start.size = Vector2(330, 62)
+	start.position = Vector2(100, 300)
+	start.size = Vector2(330, 56)
 	start.pressed.connect(func() -> void:
 		Audio.sfx("click")
 		start_requested.emit())
 	add_child(start)
 
-	var help_btn := UiKit.button("操作说明", 26)
-	help_btn.position = Vector2(100, 398)
-	help_btn.size = Vector2(330, 54)
+	var daily := UiKit.button("每日挑战", 24)
+	daily.position = Vector2(100, 364)
+	daily.size = Vector2(330, 50)
+	daily.pressed.connect(func() -> void:
+		Audio.sfx("click")
+		daily_requested.emit())
+	add_child(daily)
+
+	var help_btn := UiKit.button("操作说明", 24)
+	help_btn.position = Vector2(100, 422)
+	help_btn.size = Vector2(330, 50)
 	help_btn.pressed.connect(_toggle_help)
 	add_child(help_btn)
 
-	var codex := UiKit.button("农场图鉴", 26)
-	codex.position = Vector2(100, 464)
-	codex.size = Vector2(330, 54)
+	var codex := UiKit.button("农场图鉴", 24)
+	codex.position = Vector2(100, 480)
+	codex.size = Vector2(330, 50)
 	codex.pressed.connect(func() -> void:
 		Audio.sfx("click")
 		codex_requested.emit())
 	add_child(codex)
 
-	var quit := UiKit.button("离开", 26)
-	quit.position = Vector2(100, 530)
-	quit.size = Vector2(330, 54)
+	var quit := UiKit.button("离开", 24)
+	quit.position = Vector2(100, 538)
+	quit.size = Vector2(330, 50)
 	quit.pressed.connect(func() -> void: quit_requested.emit())
 	add_child(quit)
 
 	var best := UiKit.label(_best_text(), 22, Color("#f2c94c"))
-	best.position = Vector2(100, 610)
+	best.position = Vector2(100, 612)
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v1.5.0 · 全部美术与音乐由程序生成", 18, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v1.6.0 · 全部美术与音乐由程序生成", 18, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
