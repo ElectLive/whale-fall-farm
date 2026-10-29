@@ -3,6 +3,22 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.0.0 — 2026-10-29（更新 17–20，完整版）
+
+### Added
+
+- **Pet leveling**: harvests grant pet XP (10 per level); level raises attack damage and shortens attack cooldown; HUD shows `小鲸鱼 LvN`.
+- **Second biome 雾港 (Mist Harbor)**: after the first run, ~30% of runs start in a cooler, foggy harbor: crops grow 15% faster, nights add one slime, island/sea are tinted.
+- Save version field (`save_version=2`) with safe defaults for older saves.
+- Final title badge, 20-update table and full documentation.
+
+### Changed
+
+- Day length 75s → 80s for the final balance pass.
+- FPS capped at 60; mobile halves firefly and rain particle counts.
+- `OS.low_processor_usage_mode` enabled.
+- README, design doc, devlog, changelog and release notes complete the 20-update plan.
+
 ## v1.6.0 — 2026-10-29
 
 ### Added
@@ -151,7 +167,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.6.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.0.0...main
+[v2.0.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.0.0
 [v1.6.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.6.0
 [v1.5.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.5.0
 [v1.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.4.0

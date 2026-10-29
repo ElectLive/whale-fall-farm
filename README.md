@@ -11,6 +11,7 @@
 ![雨天](screenshots/shot_rain.png)
 ![雷雨](screenshots/shot_storm.png)
 ![图鉴](screenshots/shot_codex.png)
+![雾港](screenshots/shot_mist.png)
 ![南瓜王](screenshots/shot_boss.png)
 
 ## 玩法
@@ -21,8 +22,9 @@
 - **黎明**：三选一随机祝福，然后可以在**潮汐商店**用金币买种子、回血、加生命上限。
 - **成就**：8 个成就（首收、50 收、50 杀、第 5 天、Boss、无尽 10 天、金色作物、雷雨）解锁时弹横幅并写入存档。
 - **农场图鉴 / 统计**：标题界面打开图鉴，查看已发现的作物、怪物、祝福；统计页记录游玩局数、最佳天数、累计收获/击杀/金币。
+- **第二张地图「雾港」**：通关过一局后，约 30% 的局会进入雾港——冷色调、淡雾、作物生长 +15%，夜里多一只怪。
 - **每日挑战**：标题界面按当天日期生成固定种子，同一天所有玩家地形/天气/祝福一致；本地记录每日最佳天数。
-- **小鲸鱼**：开局跟随玩家，自动攻击附近的怪物；收获作物会让它成长（每 10 个收获升 1 级）。
+- **小鲸鱼**：开局跟随玩家，自动攻击附近的怪物；收获作物会让它成长（每 10 个收获升 1 级，等级显示在左下）。
 - **设置**：暂停菜单可关震屏、弱化闪光、开自动瞄准；手机端还有震动开关。
 - **第 7 夜**：腐化南瓜王苏醒。它会吐种子弹、在血量过半和残血时召唤潮泥怪；打倒它才能迎来胜利。
 - **无尽模式**：通关后可以继续。每 3 天再战一次南瓜王，怪潮越来越厚，直到农场沉没。最佳纪录按存活天数结算。
@@ -65,8 +67,8 @@
 
 到 [Releases](https://github.com/ElectLive/whale-fall-farm/releases) 下载最新版：
 
-- Windows：`WhaleFallFarm-v1.6.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
-- Android：`WhaleFallFarm-v1.6.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
+- Windows：`WhaleFallFarm-v2.0.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
+- Android：`WhaleFallFarm-v2.0.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
 
 ## 从源码运行
 
@@ -111,7 +113,7 @@ python tools/gen_audio.py   # 4 首循环 BGM + 17 个音效 + 1 条雨声（需
 
 ```bash
 # 无头逻辑测试：种田、昼夜、商店、祝福、Boss、无尽、天气、移动端触控、存档
-Godot --headless --path . -- --selftest     # 68/68 PASS
+Godot --headless --path . -- --selftest     # 71/71 PASS
 
 # 实时冒烟测试：真的种一轮、传送到怪身边砍死几只、进入黎明
 Godot --headless --path . -- --smoke
@@ -134,6 +136,8 @@ scripts/
   sea.gd / island.gd    鲸背小岛与海面
   hud.gd                HUD、Boss 血条、横幅提示、低血量红框
   mobile_controls.gd    手机虚拟摇杆与触控按钮
+  pet.gd                小鲸鱼宠物（跟随/自动攻击/升级）
+  codex_screen.gd       农场图鉴与终身统计
   title_screen.gd       标题界面
   dawn_screen.gd        黎明祝福三选一 + 潮汐商店
   end_screen.gd         结算界面
@@ -171,6 +175,17 @@ docs/
 - **v1.4.0** — 4 个新祝福（暴击/收割回血/夜战/点金手）；新怪物「铁甲虫」（护甲减伤）；雾天与雷雨天气（闪电、雨声、自动浇水）；8 个成就与解锁横幅。
 - **v1.5.0** — 农场图鉴与终身统计；无尽 Boss 词缀（狂暴/再生/召唤）；精英怪（双倍生命与金币）；图鉴/统计界面。
 - **v1.6.0** — 每日挑战（日期种子）；小鲸鱼宠物（跟随/自动攻击/成长）；震屏、闪光弱化、自动瞄准设置；暂停菜单两行设置。
+- **v2.0.0** — 20 次更新完成：小鲸鱼等级与喂养成长、第二张地图「雾港」、移动端粒子降级/FPS 上限/存档版本迁移、最终平衡（白天 80 秒）与完整文档。
+
+## 20 次更新记录
+
+| 批次 | 内容 | 发布 |
+| --- | --- | --- |
+| 01–04 | 手机震动/自动暂停、农事 QoL、辣椒 + 5 格种子栏、金色作物 | [v1.3.0](https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.3.0) |
+| 05–08 | 4 个新祝福、铁甲虫、雾/雷雨天气、8 个成就 | [v1.4.0](https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.4.0) |
+| 09–12 | 农场图鉴、终身统计、无尽 Boss 词缀、精英怪 | [v1.5.0](https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.5.0) |
+| 13–16 | 每日挑战、震屏/闪光/自动瞄准、小鲸鱼宠物 | [v1.6.0](https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.6.0) |
+| 17–20 | 宠物等级、雾港地图、移动端性能、v2.0.0 完整版 | [v2.0.0](https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.0.0) |
 
 ## License
 

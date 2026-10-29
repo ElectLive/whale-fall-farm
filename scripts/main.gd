@@ -6,7 +6,7 @@ extends Node2D
 
 enum State { TITLE, DAY, NIGHT, DAWN, GAMEOVER, VICTORY, PAUSED }
 
-const DAY_LENGTH := 75.0
+const DAY_LENGTH := 80.0
 const SPAWN_INTERVAL_BASE := 1.9
 
 var state: int = State.TITLE
