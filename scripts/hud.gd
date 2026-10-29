@@ -21,7 +21,13 @@ var seed_panels: Array[PanelContainer] = []
 var seed_counts: Array[Label] = []
 var progress: ProgressBar
 var damage_flash: ColorRect
+var banner_label: Label
+var boss_panel: PanelContainer
+var boss_name: Label
+var boss_bar: ProgressBar
+var boss_fill: StyleBoxFlat
 var _progress_fill: StyleBoxFlat
+var _banner_tween: Tween
 
 
 func _ready() -> void:
@@ -174,6 +180,46 @@ func _build() -> void:
 	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(damage_flash)
 
+	# boss health bar (hidden until the pumpkin king wakes up)
+	boss_panel = UiKit.panel_container(8)
+	boss_panel.position = Vector2(470, 126)
+	boss_panel.size = Vector2(340, 62)
+	boss_panel.visible = false
+	add_child(boss_panel)
+	var bv := VBoxContainer.new()
+	bv.add_theme_constant_override("separation", 2)
+	boss_panel.add_child(bv)
+	boss_name = UiKit.label("腐化南瓜王", 18, Color("#ffb066"))
+	boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	bv.add_child(boss_name)
+	boss_bar = ProgressBar.new()
+	boss_bar.custom_minimum_size = Vector2(290, 10)
+	boss_bar.show_percentage = false
+	boss_bar.max_value = 1.0
+	boss_bar.value = 1.0
+	boss_fill = StyleBoxFlat.new()
+	boss_fill.bg_color = Color("#e8893a")
+	boss_fill.corner_radius_top_left = 3
+	boss_fill.corner_radius_top_right = 3
+	boss_fill.corner_radius_bottom_left = 3
+	boss_fill.corner_radius_bottom_right = 3
+	var bbg := StyleBoxFlat.new()
+	bbg.bg_color = Color(0.06, 0.05, 0.04, 0.9)
+	boss_bar.add_theme_stylebox_override("background", bbg)
+	boss_bar.add_theme_stylebox_override("fill", boss_fill)
+	bv.add_child(boss_bar)
+
+	# big centre banner ("夜幕降临", boss warnings ...)
+	banner_label = UiKit.label("", 46, Color("#f6e7b4"))
+	banner_label.position = Vector2(240, 232)
+	banner_label.size = Vector2(800, 70)
+	banner_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_label.add_theme_constant_override("outline_size", 14)
+	banner_label.add_theme_color_override("font_outline_color", Color(0.03, 0.04, 0.08, 0.95))
+	banner_label.modulate.a = 0.0
+	banner_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(banner_label)
+
 
 func set_day(day: int, phase_text: String, phase_color: Color) -> void:
 	day_label.text = "第 %d 天" % day
@@ -225,3 +271,28 @@ func flash_damage() -> void:
 	damage_flash.color.a = 0.35
 	var tw := create_tween()
 	tw.tween_property(damage_flash, "color:a", 0.0, 0.35)
+
+
+func show_boss(name: String, hp: int, max_hp: int) -> void:
+	boss_panel.visible = true
+	boss_name.text = name
+	boss_bar.value = clampf(float(hp) / float(maxi(1, max_hp)), 0.0, 1.0)
+
+
+func hide_boss() -> void:
+	if boss_panel:
+		boss_panel.visible = false
+
+
+func banner(text: String, color: Color = Color("#f6e7b4"), hold: float = 1.1) -> void:
+	if banner_label == null:
+		return
+	if _banner_tween != null and _banner_tween.is_valid():
+		_banner_tween.kill()
+	banner_label.text = text
+	banner_label.add_theme_color_override("font_color", color)
+	banner_label.modulate.a = 0.0
+	_banner_tween = create_tween()
+	_banner_tween.tween_property(banner_label, "modulate:a", 1.0, 0.18)
+	_banner_tween.tween_interval(hold)
+	_banner_tween.tween_property(banner_label, "modulate:a", 0.0, 0.6)

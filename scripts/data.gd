@@ -39,7 +39,20 @@ const ENEMIES := {
 		"name": "缠根怪", "hp": 7, "speed": 13.0, "damage": 2, "gold": 5,
 		"texture": "res://assets/generated/chars/vine.png", "frames": 2, "scale": 1.0,
 	},
+	"boss": {
+		"name": "腐化南瓜王", "hp": 24, "speed": 15.0, "damage": 2, "gold": 60,
+		"texture": "res://assets/generated/chars/boss_pumpkin.png", "frames": 2, "scale": 1.0,
+		"size": 32, "boss": true,
+	},
 }
+
+const SHOP_OFFERS := [
+	{"id": "seed_radish", "name": "萝卜种子 ×3", "desc": "长得快，回本快", "price": 6, "icon": "seed_radish"},
+	{"id": "seed_pumpkin", "name": "南瓜种子 ×2", "desc": "沉甸甸的稳健收益", "price": 14, "icon": "seed_pumpkin"},
+	{"id": "seed_star", "name": "星露花种子 ×1", "desc": "很贵，但值得", "price": 18, "icon": "seed_star"},
+	{"id": "heal", "name": "潮汐药汤", "desc": "回复 2 点生命", "price": 8, "icon": "heart_full"},
+	{"id": "maxhp", "name": "鲸骨护心镜", "desc": "生命上限 +1，回复 1", "price": 24, "icon": "heart_full"},
+]
 
 const RELICS := [
 	{"id": "boots", "name": "疾风草鞋", "desc": "移动速度 +20%", "icon": "relic_boots", "color": "#8fd3d6"},
@@ -62,6 +75,12 @@ static func night_duration(day: int) -> float:
 
 
 static func night_plan(day: int) -> Array:
+	if day == WIN_DAY:
+		return [
+			{"kind": "slime", "count": 6},
+			{"kind": "crow", "count": 3},
+			{"kind": "vine", "count": 2},
+		]
 	var extra := maxi(0, day - 7)
 	return [
 		{"kind": "slime", "count": 4 + (day - 1) * 2 + extra * 2},

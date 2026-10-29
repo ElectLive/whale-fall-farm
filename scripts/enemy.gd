@@ -21,12 +21,18 @@ var retarget_cd := 0.0
 var eat_t := 0.0
 var frame_count := 1
 var enraged := false
+var is_boss := false
+var boss_phase := 0
+var shoot_cd := 2.2
+var sprite_size := 16
 
 
 func setup(enemy_kind: String, at: Vector2, game_ref: Node, hp_mult: float = 1.0) -> void:
 	kind = enemy_kind
 	game = game_ref
 	var info: Dictionary = GameData.ENEMIES[kind]
+	is_boss = bool(info.get("boss", false))
+	sprite_size = int(info.get("size", 16))
 	max_hp = maxi(1, roundi(float(info["hp"]) * hp_mult))
 	hp = max_hp
 	speed = float(info["speed"])
@@ -41,14 +47,16 @@ func _ready() -> void:
 	z_index = int(position.y) + 1
 	var info: Dictionary = GameData.ENEMIES[kind]
 	var shape := CircleShape2D.new()
-	shape.radius = 5.0
+	shape.radius = 8.0 if is_boss else 5.0
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
 	shadow = Sprite2D.new()
 	shadow.texture = preload("res://assets/generated/chars/shadow.png")
-	shadow.position = Vector2(0, 5)
+	shadow.position = Vector2(0, 5 if not is_boss else 12)
 	shadow.modulate = Color(1, 1, 1, 0.7)
+	if is_boss:
+		shadow.scale = Vector2(1.8, 1.5)
 	add_child(shadow)
 	sprite = Sprite2D.new()
 	sprite.texture = load(info["texture"])
@@ -57,11 +65,15 @@ func _ready() -> void:
 	sprite.vframes = 1
 	sprite.frame = 0
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.position = Vector2(0, -3)
+	sprite.position = Vector2(0, -3) if not is_boss else Vector2(0, -10)
 	var enemy_scale := 1.18 if kind == "vine" else 1.0
+	if is_boss:
+		enemy_scale = 1.15
 	sprite.scale = Vector2(enemy_scale, enemy_scale)
 	add_child(sprite)
 	queue_redraw()
+	if is_boss:
+		game.burst(position, Color("#e8893a"), 18)
 
 
 func _physics_process(delta: float) -> void:
@@ -82,7 +94,9 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 	var desired := Vector2.ZERO
-	if kind == "crow":
+	if is_boss:
+		desired = _boss_behaviour(delta)
+	elif kind == "crow":
 		desired = _crow_behaviour(delta)
 	else:
 		desired = (player.global_position - global_position)
@@ -91,12 +105,13 @@ func _physics_process(delta: float) -> void:
 		else:
 			desired = desired.normalized() * speed * (0.7 if kind == "vine" and sin(anim_t * 2.0) > 0.6 else 1.0)
 	# separation so monsters don't stack into a single pixel
-	for other in game.enemies:
-		if other == self or other.dead:
-			continue
-		var d: Vector2 = global_position - other.global_position
-		if d.length() < 11.0 and d.length() > 0.01:
-			desired += d.normalized() * 14.0
+	if not is_boss:
+		for other in game.enemies:
+			if other == self or other.dead:
+				continue
+			var d: Vector2 = global_position - other.global_position
+			if d.length() < 11.0 and d.length() > 0.01:
+				desired += d.normalized() * 14.0
 	if knock.length() > 1.0:
 		desired += knock
 		knock = knock.move_toward(Vector2.ZERO, 220.0 * delta)
@@ -104,9 +119,28 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	# contact damage
 	var dist := global_position.distance_to(player.global_position)
-	if dist < 11.0 and atk_cd <= 0.0:
-		atk_cd = 1.0
+	var reach := 16.0 if is_boss else 11.0
+	if dist < reach and atk_cd <= 0.0:
+		atk_cd = 1.2 if is_boss else 1.0
 		player.hurt(damage, self)
+
+
+func _boss_behaviour(delta: float) -> Vector2:
+	var to_player: Vector2 = game.player.global_position - global_position
+	var desired := Vector2.ZERO
+	if to_player.length() > 24.0:
+		desired = to_player.normalized() * speed
+	shoot_cd -= delta
+	if shoot_cd <= 0.0:
+		shoot_cd = 3.2
+		game.boss_shoot(self)
+	if boss_phase == 0 and hp <= max_hp * 0.66:
+		boss_phase = 1
+		game.boss_summon(self)
+	elif boss_phase == 1 and hp <= max_hp * 0.33:
+		boss_phase = 2
+		game.boss_summon(self)
+	return desired
 
 
 func _crow_behaviour(delta: float) -> Vector2:
@@ -152,7 +186,7 @@ func take_damage(amount: int, from_dir: Vector2) -> void:
 		return
 	hp -= amount
 	flash = 0.22
-	knock = from_dir.normalized() * 70.0
+	knock = from_dir.normalized() * (26.0 if is_boss else 70.0)
 	game.on_enemy_damaged(self, amount)
 	queue_redraw()
 	if hp <= 0:
@@ -179,6 +213,7 @@ func enrage() -> void:
 func _draw() -> void:
 	if hp >= max_hp:
 		return
-	var w := 16.0
-	draw_rect(Rect2(-w * 0.5 - 1, -13, w + 2, 4), Color(0.04, 0.05, 0.09, 0.85))
-	draw_rect(Rect2(-w * 0.5, -12, w * clampf(float(hp) / float(max_hp), 0.0, 1.0), 2), Color("#e2556b"))
+	var w := 30.0 if is_boss else 16.0
+	var y := -30.0 if is_boss else -13.0
+	draw_rect(Rect2(-w * 0.5 - 1, y - 1, w + 2, 4), Color(0.04, 0.05, 0.09, 0.85))
+	draw_rect(Rect2(-w * 0.5, y, w * clampf(float(hp) / float(max_hp), 0.0, 1.0), 2), Color("#e2556b"))

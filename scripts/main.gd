@@ -33,6 +33,10 @@ var player: Player
 var enemies: Array[Enemy] = []
 var crops: Array[Crop] = []
 var relic_ids: Array[String] = []
+var boss: Enemy = null
+var boss_ending := false
+var shop_offers: Array = []
+var shop_sold: Array[bool] = []
 
 var day := 1
 var gold := 0
@@ -64,7 +68,6 @@ func _ready() -> void:
 	_build_ui()
 	_connect_ui()
 	show_title()
-
 
 func _fresh_mods() -> Dictionary:
 	return {
@@ -159,6 +162,7 @@ func _connect_ui() -> void:
 	title_screen.quit_requested.connect(func() -> void: get_tree().quit())
 	dawn_screen.relic_chosen.connect(_on_relic_chosen)
 	dawn_screen.continue_pressed.connect(_on_dawn_continue)
+	dawn_screen.shop_buy.connect(_on_shop_buy)
 	end_screen.restart_requested.connect(func() -> void: start_new_run())
 	end_screen.title_requested.connect(show_title)
 	pause_screen.resume_requested.connect(_toggle_pause)
@@ -177,7 +181,6 @@ func show_title() -> void:
 	_clear_run()
 	Audio.play_music("title")
 
-
 func start_new_run(seed_value: int = 0) -> void:
 	_clear_run()
 	run_active = true
@@ -191,11 +194,15 @@ func start_new_run(seed_value: int = 0) -> void:
 	selected_seed = 0
 	relic_ids.clear()
 	mods = _fresh_mods()
+	boss = null
+	shop_offers.clear()
+	shop_sold.clear()
 	if seed_value == 0:
 		seed_value = rng.randi()
 	farm.setup(seed_value)
 	world.visible = true
 	hud.visible = true
+	hud.hide_boss()
 	title_screen.visible = false
 	dawn_screen.visible = false
 	end_screen.visible = false
@@ -217,10 +224,15 @@ func start_new_run(seed_value: int = 0) -> void:
 
 
 func _clear_run() -> void:
+	_clear_shots()
 	for e in enemies:
 		if is_instance_valid(e):
 			e.queue_free()
 	enemies.clear()
+	boss = null
+	boss_ending = false
+	if hud != null:
+		hud.hide_boss()
 	for c in crops:
 		if is_instance_valid(c):
 			c.queue_free()
@@ -233,6 +245,12 @@ func _clear_run() -> void:
 	night_queue.clear()
 
 
+func _clear_shots() -> void:
+	for n in get_tree().get_nodes_in_group("seed_shots"):
+		if is_instance_valid(n):
+			n.queue_free()
+
+
 func day_setup() -> void:
 	state = State.DAY
 	phase_total = DAY_LENGTH
@@ -242,6 +260,7 @@ func day_setup() -> void:
 	sea.set_night(false)
 	_tween_ambient(Color(1, 1, 1))
 	hud.set_day(day, "白天", Color("#8fe0b0"))
+	hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
 	_seeds_dirty = true
 
 
@@ -284,10 +303,10 @@ func _process(delta: float) -> void:
 			for e in enemies:
 				if is_instance_valid(e) and not e.dead:
 					e.enrage()
-		if phase_time < -12.0:
+		if phase_time < -12.0 and boss == null:
 			_flee_enemies()
 			_end_night()
-		elif night_queue.is_empty() and enemies.is_empty() and phase_time < phase_total - 1.0:
+		elif night_queue.is_empty() and enemies.is_empty() and phase_time < phase_total - 1.0 and not boss_ending:
 			_end_night()
 	if run_active and state in [State.DAY, State.NIGHT]:
 		_update_hud(false)
@@ -300,6 +319,10 @@ func start_night() -> void:
 	phase_total = GameData.night_duration(day)
 	phase_time = phase_total
 	enrage_done = false
+	boss = null
+	boss_ending = false
+	_clear_shots()
+	hud.hide_boss()
 	night_queue.clear()
 	var plan := GameData.night_plan(day)
 	for entry in plan:
@@ -312,7 +335,25 @@ func start_night() -> void:
 	Audio.play_music("night")
 	Audio.sfx("horn", 1.0, -4.0)
 	hud.set_day(day, "夜晚", Color("#9a8fe0"))
+	hud.banner("第 %d 夜 · 涨潮了" % day, Color("#9a8fe0"), 1.0)
+	if day == GameData.WIN_DAY:
+		get_tree().create_timer(1.8).timeout.connect(_spawn_boss)
 	_update_hud(true)
+
+
+func _spawn_boss() -> void:
+	if state != State.NIGHT or boss != null:
+		return
+	var e := Enemy.new()
+	e.setup("boss", Vector2(120, -14), self, GameData.hp_scale(day))
+	entities.add_child(e)
+	enemies.append(e)
+	boss = e
+	hud.show_boss(String(GameData.ENEMIES["boss"]["name"]), e.hp, e.max_hp)
+	hud.banner("腐化南瓜王苏醒了", Color("#ff9a5c"), 1.8)
+	Audio.sfx("boss_roar")
+	shake(9.0)
+	burst(e.position + Vector2(0, 10), Color("#e8893a"), 20)
 
 
 func _tick_spawning() -> void:
@@ -324,12 +365,38 @@ func _tick_spawning() -> void:
 
 
 func _spawn_enemy(kind: String) -> Enemy:
-	var pos := _edge_position()
+	return _spawn_enemy_at(kind, _edge_position())
+
+
+func _spawn_enemy_at(kind: String, pos: Vector2) -> Enemy:
 	var e := Enemy.new()
 	e.setup(kind, pos, self, GameData.hp_scale(day))
 	entities.add_child(e)
 	enemies.append(e)
+	burst(pos, Color("#9a8fe0"), 6)
 	return e
+
+
+func boss_shoot(b: Enemy) -> void:
+	if player == null or player.dead or not is_instance_valid(b):
+		return
+	var aim := (player.position - b.position).normalized()
+	aim = aim.rotated(rng.randf_range(-0.08, 0.08))
+	var shot := SeedShot.new()
+	shot.setup(b.position + Vector2(0, -10), aim, self)
+	entities.add_child(shot)
+	shot.add_to_group("seed_shots")
+	Audio.sfx("seed", 0.9, -5.0)
+
+
+func boss_summon(b: Enemy) -> void:
+	if state != State.NIGHT:
+		return
+	hud.banner("南瓜王召唤了潮泥怪", Color("#9a8fe0"), 1.2)
+	Audio.sfx("horn", 1.25, -7.0)
+	for i in range(2):
+		_spawn_enemy_at("slime", b.position + Vector2(rng.randf_range(-26, 26), rng.randf_range(-6, 18)))
+	burst(b.position, Color("#9a8fe0"), 12)
 
 
 func _edge_position() -> Vector2:
@@ -352,17 +419,26 @@ func _edge_position() -> Vector2:
 
 
 func _flee_enemies() -> void:
+	var keep: Array[Enemy] = []
 	for e in enemies.duplicate():
-		if is_instance_valid(e):
-			burst(e.global_position, Color("#9a8fe0"), 6)
-			e.queue_free()
-	enemies.clear()
+		if not is_instance_valid(e):
+			continue
+		if e == boss:
+			keep.append(e)
+			continue
+		burst(e.global_position, Color("#9a8fe0"), 6)
+		e.queue_free()
+	enemies = keep
 
 
 func _end_night() -> void:
 	if state != State.NIGHT:
 		return
+	_clear_shots()
 	_flee_enemies()
+	boss = null
+	boss_ending = false
+	hud.hide_boss()
 	state = State.DAWN
 	Audio.sfx("dawn")
 	sea.set_night(false)
@@ -376,8 +452,21 @@ func _end_night() -> void:
 	day_setup()
 	state = State.DAWN
 	var choices: Array = _roll_relics()
+	var offers: Array = _roll_shop()
 	hud.visible = false
-	dawn_screen.show_dawn(day - 1, choices, earned, killed, day)
+	dawn_screen.show_dawn(day - 1, choices, earned, killed, day, offers, gold)
+
+
+func _roll_shop() -> Array:
+	var pool: Array = GameData.SHOP_OFFERS.duplicate(true)
+	for i in range(pool.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var tmp = pool[i]
+		pool[i] = pool[j]
+		pool[j] = tmp
+	shop_offers = pool.slice(0, 3)
+	shop_sold = [false, false, false]
+	return shop_offers
 
 
 func _roll_relics() -> Array:
@@ -471,6 +560,40 @@ func _finish_run(victory: bool) -> void:
 	end_screen.show_result("victory" if victory else "gameover", day, kills, run_gold, is_best)
 
 
+func _on_shop_buy(index: int) -> void:
+	if state != State.DAWN or index < 0 or index >= shop_offers.size():
+		return
+	if index < shop_sold.size() and shop_sold[index]:
+		return
+	var offer: Dictionary = shop_offers[index]
+	var price := int(offer["price"])
+	if gold < price:
+		Audio.sfx("click", 0.7)
+		dawn_screen.notify("金币不够，去卖掉几颗作物吧。")
+		return
+	gold -= price
+	if index < shop_sold.size():
+		shop_sold[index] = true
+	match String(offer["id"]):
+		"seed_radish":
+			seeds["radish"] = int(seeds["radish"]) + 3
+		"seed_pumpkin":
+			seeds["pumpkin"] = int(seeds["pumpkin"]) + 2
+		"seed_star":
+			seeds["star"] = int(seeds["star"]) + 1
+		"heal":
+			if player:
+				player.heal(2)
+		"maxhp":
+			if player:
+				player.set_max_hp(player.max_hp + 1, 1)
+				_hearts_dirty = true
+	Audio.sfx("buy")
+	hud.set_gold(gold)
+	_seeds_dirty = true
+	dawn_screen.refresh_shop(gold, shop_sold)
+
+
 func _tween_ambient(target: Color) -> void:
 	if _ambient_tween != null and _ambient_tween.is_valid():
 		_ambient_tween.kill()
@@ -485,6 +608,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.keycode == KEY_ESCAPE:
 		if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
 			_toggle_pause()
+		return
+	if state == State.DAWN:
+		if event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+			if dawn_screen.ready_to_continue():
+				dawn_screen.continue_pressed.emit()
 		return
 	if not can_control():
 		return
@@ -667,6 +795,8 @@ func player_attack(p: Player, dir: Vector2) -> void:
 func on_enemy_damaged(e: Enemy, amount: int) -> void:
 	float_text("%d" % amount, e.global_position + Vector2(0, -14), Color("#ffe9a8"), 10)
 	burst(e.global_position, Color("#e2556b"), 4)
+	if e == boss:
+		hud.show_boss(String(GameData.ENEMIES["boss"]["name"]), e.hp, e.max_hp)
 	shake(1.0)
 
 
@@ -681,6 +811,17 @@ func on_enemy_died(e: Enemy) -> void:
 	float_text("+%d" % value, e.global_position + Vector2(0, -10), Color("#f2c94c"), 9)
 	burst(e.global_position, Color("#9a8fe0"), 12)
 	Audio.sfx("die")
+	if e == boss:
+		boss = null
+		boss_ending = true
+		hud.hide_boss()
+		hud.banner("南瓜王倒下了", Color("#f2c94c"), 1.4)
+		Audio.sfx("explosion")
+		shake(12.0)
+		burst(e.global_position, Color("#f2c94c"), 26)
+		_clear_shots()
+		night_queue.clear()
+		get_tree().create_timer(1.6).timeout.connect(_on_boss_death_delay)
 	if float(mods["lifesteal"]) > 0.0 and rng.randf() < float(mods["lifesteal"]) and player:
 		player.heal(1)
 		float_text("+1", player.position + Vector2(0, -22), Color("#8fe0b0"), 9)
@@ -691,6 +832,11 @@ func on_enemy_died(e: Enemy) -> void:
 	if rng.randf() < 0.07 and player:
 		player.heal(1)
 	_update_hud(true)
+
+
+func _on_boss_death_delay() -> void:
+	if state == State.NIGHT:
+		_end_night()
 
 
 func on_player_hurt(amount: int, source: Node) -> void:
@@ -807,9 +953,11 @@ func setup_shot(name: String) -> void:
 			phase_time = 14.0
 			player.position = farm.tile_center(Vector2i(7, 4))
 			player.facing = Vector2.DOWN
+			player.invuln = 99.0
+			var spots := [Vector2(52, 32), Vector2(188, 40), Vector2(60, 120), Vector2(184, 118)]
 			for i in range(4):
 				var e := _spawn_enemy(["slime", "crow", "vine", "slime"][i])
-				e.position = Vector2(60 + i * 40, 30 + (i % 2) * 90)
+				e.position = spots[i]
 			_update_hud(true)
 		"dawn":
 			start_new_run(20261029)
@@ -819,7 +967,37 @@ func setup_shot(name: String) -> void:
 			var choices: Array = []
 			for id in ["boots", "rainbell", "goldseed"]:
 				choices.append(GameData.relic_by_id(id))
-			dawn_screen.show_dawn(2, choices, 48, 9, 3)
+			var offers: Array = _roll_shop()
+			gold = 48
+			dawn_screen.show_dawn(2, choices, 48, 9, 3, offers, gold)
+		"shop":
+			start_new_run(20261029)
+			day = 2
+			state = State.DAWN
+			hud.visible = false
+			var choices2: Array = []
+			for id in ["boots", "rainbell", "goldseed"]:
+				choices2.append(GameData.relic_by_id(id))
+			var offers2: Array = _roll_shop()
+			gold = 48
+			dawn_screen.show_dawn(2, choices2, 48, 9, 3, offers2, gold)
+			dawn_screen._on_card(choices2[0])
+		"boss":
+			start_new_run(20261029)
+			day = 7
+			state = State.NIGHT
+			phase_total = 34.0
+			phase_time = 18.0
+			night_queue.clear()
+			player.position = farm.tile_center(Vector2i(7, 6))
+			player.facing = Vector2.UP
+			player.invuln = 99.0
+			_spawn_boss()
+			if boss != null:
+				boss.position = Vector2(120, 34)
+			_spawn_enemy_at("slime", Vector2(56, 84))
+			_spawn_enemy_at("crow", Vector2(184, 88))
+			_update_hud(true)
 		"gameover":
 			start_new_run(20261029)
 			hud.visible = false
@@ -900,13 +1078,43 @@ func run_selftest() -> int:
 	_check(day == 2, "day advances")
 	_check(dawn_screen.visible, "dawn screen visible")
 
-	# relic selection + continue
+	# relic selection + shop + continue
 	_on_relic_chosen("boots")
 	_check(relic_ids.has("boots"), "relic applied")
 	_check(is_equal_approx(float(mods["move"]), 1.2), "boots mod applied")
+	_check(shop_offers.size() == 3, "dawn offers three shop items")
+	var gold_keep := gold
+	gold = 100
+	shop_sold = [false, false, false]
+	_on_shop_buy(0)
+	_check(gold < 100, "shop purchase costs gold")
+	_check(bool(shop_sold[0]), "shop item marked sold")
+	var gold_after := gold
+	_on_shop_buy(0)
+	_check(gold == gold_after, "sold item cannot be bought twice")
+	gold = gold_keep
 	_on_dawn_continue()
 	_check(state == State.DAY, "dawn continue returns to day")
 	_check(day == 2, "second day active")
+
+	# boss finale
+	day = 7
+	state = State.NIGHT
+	phase_total = 34.0
+	phase_time = 20.0
+	night_queue.clear()
+	_spawn_boss()
+	_check(boss != null, "boss spawns")
+	_check(hud.boss_panel.visible, "boss hp bar visible")
+	if boss != null:
+		player.position = boss.position + Vector2(0, 20)
+		var boss_hp := boss.hp
+		player_attack(player, Vector2.UP)
+		_check(boss.hp < boss_hp, "scythe damages boss")
+		boss.take_damage(999, Vector2.RIGHT)
+	_check(boss == null, "boss dies")
+	await get_tree().create_timer(3.0).timeout
+	_check(state == State.VICTORY, "boss death wins the run")
 
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day
@@ -961,11 +1169,14 @@ func run_smoke() -> int:
 		if state != State.NIGHT or player == null or player.dead:
 			break
 		if not enemies.is_empty() and is_instance_valid(enemies[0]):
-			player_attack(player, (enemies[0].global_position - player.global_position).normalized())
+			var target: Enemy = enemies[0]
+			player.position = target.position + Vector2(0, 18)
+			player_attack(player, (target.global_position - player.global_position).normalized())
 			attacks += 1
 		if player.hp <= 2:
 			player.heal(1)
 		await get_tree().create_timer(0.12).timeout
+	var kills_before_cleanup := kills
 	print("SMOKE  attacks=%d kills=%d hp=%d/%d enemies=%d state=%d gold=%d"
 		% [attacks, kills, player.hp if player else -1, player.max_hp if player else -1,
 		   enemies.size(), state, gold])
@@ -977,6 +1188,6 @@ func run_smoke() -> int:
 	phase_time = 0.5
 	await get_tree().create_timer(0.7).timeout
 	print("SMOKE  after_night state=%d day=%d dawn_visible=%s" % [state, day, dawn_screen.visible])
-	var ok := state == State.DAWN and dawn_screen.visible and attacks > 0 and kills > 0
+	var ok := state == State.DAWN and dawn_screen.visible and attacks > 0 and kills_before_cleanup > 0
 	print("SMOKE ", "OK" if ok else "FAILED")
 	return 0 if ok else 1

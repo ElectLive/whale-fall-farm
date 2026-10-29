@@ -303,6 +303,32 @@ def main() -> None:
             place(b, i * 0.05, sig * env(len(sig), 0.002, 0.02, 0.3, 0.03))
         return b
 
+    def boss_roar():
+        b = np.zeros(int(1.4 * SR))
+        t = np.arange(int(1.4 * SR)) / SR
+        growl = np.sin(2 * np.pi * (52 + 6 * np.sin(2 * np.pi * 3.0 * t)) * t) * 0.5
+        growl *= env(len(growl), 0.08, 0.2, 0.7, 0.5)
+        place(b, 0, growl)
+        for i in range(5):
+            place(b, 0.05 + i * 0.12, noise(0.3, 0.12, 0.25, seed=40 + i) *
+                  env(int(0.3 * SR), 0.005, 0.05, 0.4, 0.15))
+        return b
+
+    def explosion():
+        b = np.zeros(int(0.9 * SR))
+        place(b, 0, noise(0.9, 0.4, 0.35, seed=71) * env(int(0.9 * SR), 0.002, 0.08, 0.3, 0.5))
+        bass = sine(90, 0.7, 0.6) * np.exp(-np.linspace(0, 6, int(0.7 * SR)))
+        place(b, 0, bass)
+        return b
+
+    def seed():
+        b = np.zeros(int(0.16 * SR))
+        sig = square(freq("A5") * 0.7, 0.06, 0.25, 0.22)
+        place(b, 0, sig * env(len(sig), 0.002, 0.01, 0.3, 0.02))
+        sig2 = square(freq("E5") * 0.7, 0.08, 0.25, 0.18)
+        place(b, 0.05, sig2 * env(len(sig2), 0.002, 0.02, 0.3, 0.03))
+        return b
+
     sfx("hoe.wav", hoe)
     sfx("plant.wav", plant)
     sfx("water.wav", water)
@@ -315,6 +341,9 @@ def main() -> None:
     sfx("dawn.wav", dawn)
     sfx("horn.wav", horn)
     sfx("buy.wav", buy)
+    sfx("boss_roar.wav", boss_roar)
+    sfx("explosion.wav", explosion)
+    sfx("seed.wav", seed)
     total = sum(p.stat().st_size for p in OUT.glob("*.wav"))
     print(f"audio -> {OUT} ({total/1048576:.1f} MB)")
 

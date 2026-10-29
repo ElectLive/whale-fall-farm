@@ -1,22 +1,22 @@
 # 鲸落农场 · Whale Fall Farm
 
 一个用 **Godot 4.7** 制作的小游戏：**农场经营 + Roguelike**。
-白天在鲸背上种田，夜晚抵御从潮水里爬上来的怪物；每天黎明从三份「潮汐祝福」里选一份，撑过七天。
+白天在鲸背上种田，夜晚抵御从潮水里爬上来的怪物；每天黎明挑一份「潮汐祝福」、逛一次潮汐商店，撑过七个夜晚。
 
 > 全部像素美术、背景音乐与音效都由仓库内的 Python 脚本程序化生成，没有任何外部素材包。
 
 ![标题界面](screenshots/shot_title.png)
 ![白天种田](screenshots/shot_day.png)
-![夜晚守夜](screenshots/shot_night.png)
+![南瓜王](screenshots/shot_boss.png)
 ![黎明祝福](screenshots/shot_dawn.png)
 
 ## 玩法
 
 - **白天（75 秒）**：走到田里，按 `E` 松土 → 播种 → 浇水 → 收获。作物只在浇过水之后生长。
 - **夜晚**：潮水带来史莱姆、偷穗鸦和缠根怪。用镰刀清场；乌鸦会优先啃食成熟的作物。
-- **黎明**：从三份随机祝福中选一份（移速、攻击、生长、吸血、反伤……），带进下一天。
-- **目标**：撑过第 7 个夜晚。死亡即结束本局，最佳记录保存在本地。
-- 地图装饰、夜间波次、黎明祝福都是随机的，所以每一局都不一样。
+- **黎明**：三选一随机祝福，然后可以在**潮汐商店**用金币买种子、回血、加生命上限。
+- **第 7 夜**：腐化南瓜王苏醒。它会种出追人的种子、在血量过半和残血时召唤潮泥怪；打倒它才能迎来胜利。
+- 地图装饰、夜间波次、祝福与商店都是随机的，所以每一局都不一样。
 
 ## 操作
 
@@ -33,7 +33,7 @@
 
 ### 直接玩（推荐）
 
-到 [Releases](https://github.com/ElectLive/whale-fall-farm/releases) 下载 `WhaleFallFarm-v0.1.0-win64.zip`，解压后双击 `WhaleFallFarm.exe`。
+到 [Releases](https://github.com/ElectLive/whale-fall-farm/releases) 下载最新的 `WhaleFallFarm-v0.2.0-win64.zip`，解压后双击 `WhaleFallFarm.exe`。
 存档写在 exe 旁边，绿色免安装。
 
 ### 用 Godot 打开
@@ -49,8 +49,8 @@ godot --path .
 ## 从源码重新生成素材
 
 ```bash
-python tools/gen_art.py     # 65 张像素图 + 图标（需要 Pillow）
-python tools/gen_audio.py   # 3 首循环 BGM + 12 个音效（需要 numpy）
+python tools/gen_art.py     # 67 张像素图 + 图标（需要 Pillow）
+python tools/gen_audio.py   # 3 首循环 BGM + 15 个音效（需要 numpy）
 ```
 
 脚本是确定性的：同一个脚本每次生成同样的素材，方便 diff 和复现。
@@ -58,17 +58,14 @@ python tools/gen_audio.py   # 3 首循环 BGM + 12 个音效（需要 numpy）
 ## 开发自检
 
 ```bash
-# 无头逻辑测试：种田链路、昼夜切换、祝福、存档
-Godot --headless --path . -- --selftest
+# 无头逻辑测试：种田链路、昼夜切换、商店、祝福、Boss、存档
+Godot --headless --path . -- --selftest     # 32/32 PASS
 
-# 实时冒烟测试：真的种一轮、打一夜、进入黎明
+# 实时冒烟测试：真的种一轮、传送到怪身边砍死几只、进入黎明
 Godot --headless --path . -- --smoke
 
 # 截图（输出到 screenshots/）
-Godot --path . -- --shot=title
-Godot --path . -- --shot=day
-Godot --path . -- --shot=night
-Godot --path . -- --shot=dawn
+Godot --path . -- --shot=title   # title / day / night / boss / dawn / shop / victory / gameover
 ```
 
 导出 Windows 版：
@@ -84,13 +81,14 @@ assets/
   font/                 Cubic 11 像素字体（OFL）
   generated/            由脚本生成的图、音、图标
 scripts/
-  main.gd               游戏状态机、昼夜循环、战斗、经济、存档钩子
+  main.gd               游戏状态机、昼夜循环、战斗、商店、经济、存档钩子
   farm.gd / crop.gd     农田网格与作物生长
-  player.gd / enemy.gd  玩家与三种怪物
+  player.gd / enemy.gd  玩家与怪物（含南瓜王）
+  projectile.gd         南瓜王吐出的种子
   sea.gd / island.gd    鲸背小岛与海面
-  hud.gd                游戏内 HUD
+  hud.gd                HUD、Boss 血条、横幅提示
   title_screen.gd       标题界面
-  dawn_screen.gd        黎明祝福三选一
+  dawn_screen.gd        黎明祝福三选一 + 潮汐商店
   end_screen.gd         结算界面
   pause_screen.gd       暂停界面
   audio.gd              音乐/音效自动加载
@@ -108,13 +106,15 @@ docs/
 ## 设计备注
 
 - 分辨率 1280×720，相机固定 4 倍缩放，保证像素对齐；UI 使用 12px 像素字体 Cubic 11。
-- 美术全部以 16×16 为基础手写绘制代码；角色 16×24，4 方向 4 帧。
+- 美术全部以 16×16 为基础手写绘制代码；角色 16×24，4 方向 4 帧；Boss 32×32。
 - 音乐是 numpy 合成的方波/三角波/噪声，按和弦进行生成，WAV 循环播放。
-- 数值（作物价格、怪物血量、波次）集中在 `scripts/data.gd`，方便调整。
+- 数值（作物价格、怪物血量、波次、商店价格）集中在 `scripts/data.gd`，方便调整。
+- 每局随机：地图种子、波次顺序、出生点、祝福三选一、商店三件商品、掉落。
 
 ## 版本
 
-- **v0.1.0** — 完整核心循环：种田、昼夜、三种怪物、12 种祝福、7 天胜利、结算与本地最佳记录、程序化美术与音乐、自动化测试与截图。
+- **v0.1.0** — 完整核心循环：种田、昼夜、三种怪物、12 种祝福、7 天胜利、结算与本地最佳记录。
+- **v0.2.0** — 黎明潮汐商店；第 7 夜 Boss「腐化南瓜王」（种子弹幕、召唤小怪、Boss 血条）；横幅提示、脚步扬尘、生成特效；更多音效；selftest 扩到 32 项。
 
 ## License
 

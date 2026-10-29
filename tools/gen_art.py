@@ -450,6 +450,64 @@ def vine_sheet() -> Image.Image:
     return sheet
 
 
+def boss_frame(step: int) -> Image.Image:
+    im, d = new(32, 32)
+    bob = 1 if step else 0
+    # vine arms
+    for side in (-1, 1):
+        x = 16 + side * 14
+        for k in range(4):
+            px(d, x + side * k // 2, 20 - k * 2 - bob, C["vine2"])
+            px(d, x + side * k // 2, 19 - k * 2 - bob, C["vine"])
+    # body
+    disc(d, 16, 20 - bob, 13, 10, C["ink"])
+    disc(d, 16, 19 - bob, 12, 9, C["orange2"])
+    disc(d, 16, 18 - bob, 11, 8, C["orange"])
+    # ribs
+    for dx in (-7, -3, 3, 7):
+        box(d, 16 + dx, 11 - bob, 16 + dx, 26 - bob, C["orange2"])
+        box(d, 16 + dx + 1, 13 - bob, 16 + dx + 1, 24 - bob, (244, 170, 90, 255))
+    # highlight
+    disc(d, 11, 14 - bob, 3, 2, (250, 186, 112, 255))
+    # stem + crown vines
+    box(d, 15, 6 - bob, 18, 10 - bob, C["green2"])
+    for dx, dy in ((-6, 5), (-3, 3), (0, 2), (3, 3), (6, 5)):
+        px(d, 16 + dx, 9 - bob - dy, C["green"])
+        px(d, 16 + dx, 10 - bob - dy, C["green2"])
+    # face
+    d.polygon([(9, 15 - bob), (13, 15 - bob), (11, 19 - bob)], fill=C["ink"])
+    d.polygon([(19, 15 - bob), (23, 15 - bob), (21, 19 - bob)], fill=C["ink"])
+    px(d, 11, 18 - bob, C["gold"])
+    px(d, 21, 18 - bob, C["gold"])
+    # jagged mouth
+    d.polygon([(9, 23 - bob), (23, 23 - bob), (21, 27 - bob), (18, 25 - bob), (16, 28 - bob),
+               (14, 25 - bob), (11, 27 - bob)], fill=C["ink"])
+    for tx in range(10, 22, 4):
+        px(d, tx, 24 - bob, C["white"])
+        px(d, tx + 1, 24 - bob, C["white"])
+    # glow eyes
+    if step:
+        px(d, 10, 17 - bob, (255, 240, 160, 255))
+        px(d, 20, 17 - bob, (255, 240, 160, 255))
+    return im
+
+
+def boss_sheet() -> Image.Image:
+    sheet, _ = new(64, 32)
+    for i in range(2):
+        sheet.paste(boss_frame(i), (i * 32, 0))
+    return sheet
+
+
+def seed_shot() -> Image.Image:
+    im, d = new(8, 8)
+    disc(d, 4, 5, 3, 2, C["orange"])
+    disc(d, 3, 5, 1, 1, (255, 220, 150, 255))
+    px(d, 4, 2, C["green2"])
+    px(d, 5, 1, C["green"])
+    return im
+
+
 # ---------------------------------------------------------------- crops
 def crop_radish(stage: int) -> Image.Image:
     im, d = new(16, 16)
@@ -1001,6 +1059,7 @@ def main() -> None:
     save(slime_sheet(), "chars", "slime.png")
     save(crow_sheet(), "chars", "crow.png")
     save(vine_sheet(), "chars", "vine.png")
+    save(boss_sheet(), "chars", "boss_pumpkin.png")
     save(shadow(), "chars", "shadow.png")
     # crops
     for i in range(4):
@@ -1028,6 +1087,7 @@ def main() -> None:
     save(glow(), "fx", "glow.png")
     save(slash(), "fx", "slash.png")
     save(leaf(), "fx", "leaf.png")
+    save(seed_shot(), "fx", "seed_shot.png")
     save(title_art(), "bg", "title.png")
     icon = app_icon()
     save(icon, "icon.png")

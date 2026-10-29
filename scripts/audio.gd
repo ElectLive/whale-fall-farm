@@ -19,6 +19,9 @@ const SFX := {
 	"dawn": "res://assets/generated/audio/dawn.wav",
 	"horn": "res://assets/generated/audio/horn.wav",
 	"buy": "res://assets/generated/audio/buy.wav",
+	"boss_roar": "res://assets/generated/audio/boss_roar.wav",
+	"explosion": "res://assets/generated/audio/explosion.wav",
+	"seed": "res://assets/generated/audio/seed.wav",
 }
 
 var music_player: AudioStreamPlayer

@@ -26,6 +26,7 @@ var step_t := 0.0
 var moving := false
 var dead := false
 var last_aim := Vector2.ZERO
+var foot_t := 0.0
 
 
 func setup(game_ref: Node) -> void:
@@ -96,6 +97,11 @@ func _physics_process(delta: float) -> void:
 	# clamp inside the island walkway (walls also exist; this is a safety net)
 	position.x = clampf(position.x, -8.0, 248.0)
 	position.y = clampf(position.y, -8.0, 136.0)
+	if moving:
+		foot_t -= delta
+		if foot_t <= 0.0:
+			foot_t = 0.30
+			game.burst(position + Vector2(0, 7), Color(0.82, 0.76, 0.60, 0.7), 2)
 	_animate(delta)
 	# attack input: space held or left mouse held
 	if Input.is_key_pressed(KEY_SPACE) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
