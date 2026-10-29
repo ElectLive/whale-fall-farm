@@ -19,6 +19,7 @@ var farm: Farm
 var crops_root: Node2D
 var entities: Node2D
 var fx: Node2D
+var fireflies: CPUParticles2D
 var camera: Camera2D
 var ambient: CanvasModulate
 var ui_layer: CanvasLayer
@@ -67,6 +68,8 @@ func _ready() -> void:
 	_build_world()
 	_build_ui()
 	_connect_ui()
+	Audio.set_music_on(SaveGame.music_on)
+	Audio.set_sfx_on(SaveGame.sfx_on)
 	show_title()
 
 func _fresh_mods() -> Dictionary:
@@ -74,6 +77,7 @@ func _fresh_mods() -> Dictionary:
 		"move": 1.0, "dmg": 1.0, "aspd": 1.0, "growth": 1.0, "gold": 1.0,
 		"range": 1.0, "lifesteal": 0.0, "thorns": 0, "luck": 0.0,
 		"dawn_heal": 0, "night_move": 1.0, "maxhp": 0,
+		"slow": 1.0, "water_boost": 0.0,
 	}
 
 
@@ -105,6 +109,28 @@ func _build_world() -> void:
 	fx.name = "Fx"
 	fx.z_index = 3000
 	world.add_child(fx)
+
+	fireflies = CPUParticles2D.new()
+	fireflies.name = "Fireflies"
+	fireflies.texture = preload("res://assets/generated/fx/glow.png")
+	fireflies.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	fireflies.amount = 34
+	fireflies.lifetime = 4.0
+	fireflies.preprocess = 2.0
+	fireflies.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	fireflies.emission_rect_extents = Vector2(126, 66)
+	fireflies.position = Vector2(120, 64)
+	fireflies.direction = Vector2.UP
+	fireflies.spread = 180.0
+	fireflies.initial_velocity_min = 1.0
+	fireflies.initial_velocity_max = 5.0
+	fireflies.gravity = Vector2.ZERO
+	fireflies.scale_amount_min = 0.05
+	fireflies.scale_amount_max = 0.12
+	fireflies.color = Color(1.0, 0.94, 0.6, 0.75)
+	fireflies.emitting = false
+	fireflies.z_index = 1500
+	world.add_child(fireflies)
 
 	camera = Camera2D.new()
 	camera.position = Vector2(120, 64)
@@ -167,6 +193,9 @@ func _connect_ui() -> void:
 	end_screen.title_requested.connect(show_title)
 	pause_screen.resume_requested.connect(_toggle_pause)
 	pause_screen.title_requested.connect(show_title)
+	pause_screen.toggle_music.connect(_toggle_music)
+	pause_screen.toggle_sfx.connect(_toggle_sfx)
+	pause_screen.toggle_fullscreen.connect(_toggle_fullscreen_from_pause)
 
 
 func show_title() -> void:
@@ -184,6 +213,7 @@ func show_title() -> void:
 func start_new_run(seed_value: int = 0) -> void:
 	_clear_run()
 	run_active = true
+	fireflies.emitting = false
 	day = 1
 	gold = 18
 	run_gold = 0
@@ -257,6 +287,7 @@ func day_setup() -> void:
 	phase_time = DAY_LENGTH
 	day_gold = 0
 	day_kills = 0
+	fireflies.emitting = false
 	sea.set_night(false)
 	_tween_ambient(Color(1, 1, 1))
 	hud.set_day(day, "白天", Color("#8fe0b0"))
@@ -286,6 +317,10 @@ func growth_mult() -> float:
 
 func range_mult() -> float:
 	return float(mods["range"])
+
+
+func enemy_speed_mult() -> float:
+	return float(mods["slow"])
 
 
 func _process(delta: float) -> void:
@@ -330,6 +365,7 @@ func start_night() -> void:
 			night_queue.append(entry["kind"])
 	night_queue.shuffle()
 	spawn_timer = 1.1
+	fireflies.emitting = true
 	sea.set_night(true)
 	_tween_ambient(Color(0.60, 0.65, 0.88))
 	Audio.play_music("night")
@@ -351,6 +387,7 @@ func _spawn_boss() -> void:
 	boss = e
 	hud.show_boss(String(GameData.ENEMIES["boss"]["name"]), e.hp, e.max_hp)
 	hud.banner("腐化南瓜王苏醒了", Color("#ff9a5c"), 1.8)
+	Audio.play_music("boss")
 	Audio.sfx("boss_roar")
 	shake(9.0)
 	burst(e.position + Vector2(0, 10), Color("#e8893a"), 20)
@@ -530,6 +567,10 @@ func _apply_relic(id: String) -> void:
 			mods["range"] *= 1.3
 		"nightglass":
 			mods["night_move"] *= 1.2
+		"slowcharm":
+			mods["slow"] *= 0.88
+		"greenthumb":
+			mods["water_boost"] += 0.15
 	_update_hud(true)
 
 
@@ -551,6 +592,9 @@ func _finish_run(victory: bool) -> void:
 		return
 	state = State.VICTORY if victory else State.GAMEOVER
 	run_active = false
+	fireflies.emitting = false
+	Audio.stop_music()
+	Audio.sfx("victory" if victory else "gameover", 1.0, -2.0)
 	var is_best := day > SaveGame.best_day
 	SaveGame.record_run(day, kills, run_gold)
 	hud.visible = false
@@ -614,6 +658,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			if dawn_screen.ready_to_continue():
 				dawn_screen.continue_pressed.emit()
 		return
+	if event.keycode == KEY_M:
+		_toggle_music()
+		return
 	if not can_control():
 		return
 	match event.keycode:
@@ -646,6 +693,36 @@ func toggle_fullscreen() -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 
+func _toggle_music() -> void:
+	SaveGame.music_on = not SaveGame.music_on
+	Audio.set_music_on(SaveGame.music_on)
+	Audio.sfx("click")
+	SaveGame.save_data()
+	if hud.visible:
+		hud.banner("音乐：%s" % ("开" if SaveGame.music_on else "关"), Color("#8fd3d6"), 0.6)
+	_sync_pause_toggles()
+
+
+func _toggle_sfx() -> void:
+	SaveGame.sfx_on = not SaveGame.sfx_on
+	Audio.set_sfx_on(SaveGame.sfx_on)
+	if SaveGame.sfx_on:
+		Audio.sfx("click")
+	SaveGame.save_data()
+	_sync_pause_toggles()
+
+
+func _toggle_fullscreen_from_pause() -> void:
+	toggle_fullscreen()
+	_sync_pause_toggles()
+
+
+func _sync_pause_toggles() -> void:
+	if pause_screen.visible:
+		pause_screen.set_toggles(SaveGame.music_on, SaveGame.sfx_on,
+			DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
 func _toggle_pause() -> void:
 	if state == State.PAUSED:
 		state = prev_state
@@ -656,7 +733,7 @@ func _toggle_pause() -> void:
 		var chosen: Array = []
 		for id in relic_ids:
 			chosen.append(GameData.relic_by_id(id))
-		pause_screen.show_pause(chosen)
+		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on)
 		Audio.sfx("click")
 
 
@@ -717,6 +794,8 @@ func interact() -> void:
 		"water":
 			var c: Crop = act["crop"]
 			c.water()
+			if float(mods["water_boost"]) > 0.0 and not c.mature:
+				c.growth = minf(c.grow_time, c.growth + c.grow_time * float(mods["water_boost"]))
 			Audio.sfx("water")
 			burst(c.position + Vector2(0, -2), Color("#7ec8e3"), 8)
 		"harvest":
@@ -1082,6 +1161,14 @@ func run_selftest() -> int:
 	_on_relic_chosen("boots")
 	_check(relic_ids.has("boots"), "relic applied")
 	_check(is_equal_approx(float(mods["move"]), 1.2), "boots mod applied")
+	_on_relic_chosen("slowcharm")
+	_check(is_equal_approx(float(mods["slow"]), 0.88), "slowcharm nerfs night monsters")
+	_on_relic_chosen("greenthumb")
+	_check(is_equal_approx(float(mods["water_boost"]), 0.15), "greenthumb adds watering boost")
+	Audio.set_music_on(false)
+	_check(is_equal_approx(Audio.music_level, 0.0), "music can be muted")
+	Audio.set_music_on(true)
+	_check(is_equal_approx(Audio.music_level, 1.0), "music can be unmuted")
 	_check(shop_offers.size() == 3, "dawn offers three shop items")
 	var gold_keep := gold
 	gold = 100

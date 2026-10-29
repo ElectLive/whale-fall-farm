@@ -850,6 +850,24 @@ def relic_icon(kind: str) -> Image.Image:
         disc(d, 12, 9, 4, 4, (70, 74, 110, 255))
         for x, y in ((6, 6), (18, 7), (7, 18), (17, 17)):
             px(d, x, y, C["cyan"])
+    elif kind == "slowcharm":
+        box(d, 9, 3, 15, 5, C["gold2"])
+        box(d, 8, 5, 16, 12, C["border"])
+        box(d, 9, 6, 15, 11, (200, 226, 240, 255))
+        box(d, 10, 8, 14, 10, C["gold"])
+        px(d, 12, 14, C["gold2"])
+        for x, y in ((4, 8), (5, 11), (19, 7), (18, 12), (6, 16)):
+            px(d, x, y, C["cyan"])
+    elif kind == "greenthumb":
+        disc(d, 12, 15, 6, 4, C["skin2"])
+        box(d, 7, 9, 9, 14, C["skin"])
+        box(d, 14, 9, 16, 14, C["skin"])
+        box(d, 11, 12, 13, 16, C["skin"])
+        disc(d, 12, 8, 3, 3, C["green"])
+        px(d, 12, 5, C["green2"])
+        px(d, 10, 6, C["green2"])
+        px(d, 18, 17, C["cyan"])
+        px(d, 19, 18, C["cyan2"])
     else:
         disc(d, 12, 12, 8, 8, C["border"])
     return im
@@ -1081,7 +1099,8 @@ def main() -> None:
     for k in ("hoe", "can", "scythe", "clock"):
         save(tool_icon(k), "ui", f"icon_{k}.png")
     for rid in ("boots", "whetstone", "blubber", "metronome", "rainbell", "goldseed",
-                "fang", "thorns", "clover", "tideheart", "longhandle", "nightglass"):
+                "fang", "thorns", "clover", "tideheart", "longhandle", "nightglass",
+                "slowcharm", "greenthumb"):
         save(relic_icon(rid), "ui", f"relic_{rid}.png")
     save(spark(), "fx", "spark.png")
     save(glow(), "fx", "glow.png")

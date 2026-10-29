@@ -5,6 +5,7 @@ const TRACKS := {
 	"title": "res://assets/generated/audio/title_theme.wav",
 	"day": "res://assets/generated/audio/day_theme.wav",
 	"night": "res://assets/generated/audio/night_theme.wav",
+	"boss": "res://assets/generated/audio/boss_theme.wav",
 }
 const SFX := {
 	"hoe": "res://assets/generated/audio/hoe.wav",
@@ -22,6 +23,8 @@ const SFX := {
 	"boss_roar": "res://assets/generated/audio/boss_roar.wav",
 	"explosion": "res://assets/generated/audio/explosion.wav",
 	"seed": "res://assets/generated/audio/seed.wav",
+	"victory": "res://assets/generated/audio/victory.wav",
+	"gameover": "res://assets/generated/audio/gameover.wav",
 }
 
 var music_player: AudioStreamPlayer
@@ -31,6 +34,8 @@ var _cache := {}
 var _current_track := ""
 var music_db := -11.0
 var sfx_db := -6.0
+var music_level := 1.0
+var sfx_level := 1.0
 
 
 func _ready() -> void:
@@ -66,9 +71,24 @@ func play_music(name: String) -> void:
 		wav.loop_begin = 0
 		wav.loop_end = int(wav.get_length() * wav.mix_rate)
 	music_player.stream = stream
-	music_player.volume_db = music_db
+	music_player.volume_db = _music_volume_db()
 	music_player.play()
 	_current_track = name
+
+
+func set_music_on(on: bool) -> void:
+	music_level = 1.0 if on else 0.0
+	music_player.volume_db = _music_volume_db()
+
+
+func set_sfx_on(on: bool) -> void:
+	sfx_level = 1.0 if on else 0.0
+
+
+func _music_volume_db() -> float:
+	if music_level <= 0.001:
+		return -80.0
+	return music_db + linear_to_db(music_level)
 
 
 func stop_music() -> void:
@@ -84,5 +104,8 @@ func sfx(name: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:
 	_sfx_index = (_sfx_index + 1) % _sfx_pool.size()
 	p.stream = _stream(path)
 	p.pitch_scale = pitch
-	p.volume_db = sfx_db + volume_db
+	if sfx_level <= 0.001:
+		p.volume_db = -80.0
+	else:
+		p.volume_db = sfx_db + linear_to_db(sfx_level) + volume_db
 	p.play()

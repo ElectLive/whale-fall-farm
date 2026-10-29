@@ -67,6 +67,8 @@ const RELICS := [
 	{"id": "tideheart", "name": "潮汐之心", "desc": "每天黎明回复 1 点生命", "icon": "relic_tideheart", "color": "#7ee3d4"},
 	{"id": "longhandle", "name": "长柄镰", "desc": "镰刀攻击范围 +30%", "icon": "relic_longhandle", "color": "#d8b48a"},
 	{"id": "nightglass", "name": "夜视螺镜", "desc": "夜晚移动速度 +20%", "icon": "relic_nightglass", "color": "#9a8fe0"},
+	{"id": "slowcharm", "name": "潮雾提灯", "desc": "夜晚怪物移动速度 -12%", "icon": "relic_slowcharm", "color": "#8fd3d6"},
+	{"id": "greenthumb", "name": "绿拇指", "desc": "浇水时作物立即获得 15% 生长进度", "icon": "relic_greenthumb", "color": "#8fe0b0"},
 ]
 
 

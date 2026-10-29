@@ -42,6 +42,7 @@ func setup(enemy_kind: String, at: Vector2, game_ref: Node, hp_mult: float = 1.0
 
 
 func _ready() -> void:
+	speed *= float(game.enemy_speed_mult())
 	collision_layer = 2
 	collision_mask = 4
 	z_index = int(position.y) + 1

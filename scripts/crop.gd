@@ -85,16 +85,27 @@ func _process(delta: float) -> void:
 		growth = grow_time
 		mature = true
 		stage = 3
+		sprite.texture = TEX[kind][stage]
 		glow.modulate = Color(1.0, 0.95, 0.6, 0.65)
+		_pop()
 		game.on_crop_matured(self)
 	else:
 		var s := clampi(int(growth / grow_time * 3.0), 0, 2)
 		if s != stage:
 			stage = s
 			sprite.texture = TEX[kind][stage]
+			_pop()
 	_pulse += delta
 	glow.modulate = Color(1.0, 0.95, 0.6, 0.35 + 0.2 * sin(_pulse * 3.0))
 	queue_redraw()
+
+
+func _pop() -> void:
+	if sprite == null:
+		return
+	sprite.scale = Vector2(1.2, 1.2)
+	var pop := create_tween()
+	pop.tween_property(sprite, "scale", Vector2.ONE, 0.2)
 
 
 func harvest() -> int:

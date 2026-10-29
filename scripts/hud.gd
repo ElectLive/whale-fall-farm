@@ -28,6 +28,9 @@ var boss_bar: ProgressBar
 var boss_fill: StyleBoxFlat
 var _progress_fill: StyleBoxFlat
 var _banner_tween: Tween
+var _low_rects: Array[ColorRect] = []
+var _low_active := false
+var _pulse_t := 0.0
 
 
 func _ready() -> void:
@@ -180,6 +183,20 @@ func _build() -> void:
 	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(damage_flash)
 
+	# low-health red frame
+	var frame_specs := [
+		Rect2(0, 0, 1280, 14), Rect2(0, 706, 1280, 14),
+		Rect2(0, 0, 14, 720), Rect2(1266, 0, 14, 720),
+	]
+	for spec in frame_specs:
+		var r := ColorRect.new()
+		r.color = Color(0.75, 0.08, 0.12, 0.0)
+		r.position = spec.position
+		r.size = spec.size
+		r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(r)
+		_low_rects.append(r)
+
 	# boss health bar (hidden until the pumpkin king wakes up)
 	boss_panel = UiKit.panel_container(8)
 	boss_panel.position = Vector2(470, 126)
@@ -258,6 +275,23 @@ func refresh_hearts(hp: int, max_hp: int) -> void:
 		var h := hearts.get_child(i) as TextureRect
 		h.visible = i < max_hp
 		h.texture = HEART_FULL if i < hp else HEART_EMPTY
+	set_low_hp(hp > 0 and hp <= 2)
+
+
+func set_low_hp(active: bool) -> void:
+	_low_active = active
+	if not active:
+		for r in _low_rects:
+			r.color.a = 0.0
+
+
+func _process(delta: float) -> void:
+	if not _low_active:
+		return
+	_pulse_t += delta
+	var a := 0.10 + 0.07 * (0.5 + 0.5 * sin(_pulse_t * 3.4))
+	for r in _low_rects:
+		r.color.a = a
 
 
 func refresh_seeds(counts: Array, selected: int) -> void:

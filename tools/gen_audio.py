@@ -120,9 +120,10 @@ CHORDS = {
     "F": ["F3", "A3", "C4"], "Dm": ["D4", "F4", "A4"], "Em": ["E4", "G4", "B4"],
     "Cmaj7": ["C4", "E4", "G4", "B4"], "Fmaj7": ["F3", "A3", "C4", "E4"],
     "Am7": ["A3", "C4", "E4", "G4"], "G7": ["G3", "B3", "D4", "F4"],
+    "D": ["D4", "F#4", "A4"], "E": ["E4", "G#4", "B4"],
 }
 ROOT_NOTE = {"C": "C2", "G": "G2", "Am": "A2", "F": "F2", "Dm": "D2", "Em": "E2",
-             "Cmaj7": "C2", "Fmaj7": "F2", "Am7": "A2", "G7": "G2"}
+             "Cmaj7": "C2", "Fmaj7": "F2", "Am7": "A2", "G7": "G2", "D": "D2", "E": "E2"}
 
 
 def make_music(name: str, bpm: int, chords: list[str], melody_seed: int, style: str,
@@ -218,6 +219,7 @@ def main() -> None:
     make_music("day_theme.wav", 112, ["C", "G", "Am", "F", "C", "G", "F", "G"], 11, "day", peak=0.7)
     make_music("night_theme.wav", 92, ["Am", "F", "C", "G", "Am", "Dm", "F", "G7"], 23, "night", peak=0.62)
     make_music("title_theme.wav", 76, ["Cmaj7", "Am7", "Fmaj7", "G7"], 7, "title", peak=0.52)
+    make_music("boss_theme.wav", 140, ["Em", "C", "G", "D", "Em", "C", "D", "Em"], 51, "night", peak=0.66)
 
     print("sfx")
 
@@ -329,6 +331,29 @@ def main() -> None:
         place(b, 0.05, sig2 * env(len(sig2), 0.002, 0.02, 0.3, 0.03))
         return b
 
+    def victory_sting():
+        b = np.zeros(int(4.8 * SR))
+        for i, n in enumerate(["C4", "E4", "G4", "C5"]):
+            sig = square(freq(n), 0.35, 0.25, 0.22)
+            place(b, 0.0 + i * 0.12, sig * env(len(sig), 0.005, 0.05, 0.5, 0.2))
+        for i, n in enumerate(["C4", "E4", "G4", "C5", "E5"]):
+            sig = triangle(freq(n), 3.2, 0.12)
+            place(b, 0.7, sig * env(len(sig), 0.05, 0.4, 0.5, 1.2))
+        for i in range(6):
+            sig = square(freq(["C5", "E5", "G5", "C6"][i % 4]), 0.25, 0.25, 0.12)
+            place(b, 2.4 + i * 0.16, sig * env(len(sig), 0.003, 0.04, 0.35, 0.08))
+        return b
+
+    def gameover_sting():
+        b = np.zeros(int(4.6 * SR))
+        for i, n in enumerate(["A3", "G3", "F3", "E3"]):
+            sig = triangle(freq(n), 1.4, 0.2)
+            place(b, i * 0.55, sig * env(len(sig), 0.02, 0.2, 0.5, 0.5))
+        for i, n in enumerate(["A2", "E3", "A3"]):
+            sig = sine(freq(n), 3.5, 0.10)
+            place(b, 2.0, sig * env(len(sig), 0.1, 0.5, 0.4, 1.5))
+        return b
+
     sfx("hoe.wav", hoe)
     sfx("plant.wav", plant)
     sfx("water.wav", water)
@@ -344,6 +369,8 @@ def main() -> None:
     sfx("boss_roar.wav", boss_roar)
     sfx("explosion.wav", explosion)
     sfx("seed.wav", seed)
+    sfx("victory.wav", victory_sting)
+    sfx("gameover.wav", gameover_sting)
     total = sum(p.stat().st_size for p in OUT.glob("*.wav"))
     print(f"audio -> {OUT} ({total/1048576:.1f} MB)")
 
