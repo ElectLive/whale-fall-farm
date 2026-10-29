@@ -25,6 +25,9 @@ var camera: Camera2D
 var ambient: CanvasModulate
 var ui_layer: CanvasLayer
 var overlay_layer: CanvasLayer
+var weather_layer: CanvasLayer
+var fog_rect: ColorRect
+var lightning_rect: ColorRect
 var hud: Hud
 var title_screen: TitleScreen
 var dawn_screen: DawnScreen
@@ -53,6 +56,9 @@ var day_kills := 0
 var seeds := {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0, "chili": 0}
 var selected_seed := 0
 var rainy := false
+var foggy := false
+var stormy := false
+var lightning_t := 0.0
 var mods := {}
 var rng := RandomNumberGenerator.new()
 
@@ -200,6 +206,22 @@ func _build_world() -> void:
 
 
 func _build_ui() -> void:
+	weather_layer = CanvasLayer.new()
+	weather_layer.layer = 5
+	add_child(weather_layer)
+	fog_rect = ColorRect.new()
+	fog_rect.color = Color(0.80, 0.86, 0.92, 0.0)
+	fog_rect.position = Vector2.ZERO
+	fog_rect.size = Vector2(1280, 720)
+	fog_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	weather_layer.add_child(fog_rect)
+	lightning_rect = ColorRect.new()
+	lightning_rect.color = Color(0.95, 0.97, 1.0, 0.0)
+	lightning_rect.position = Vector2.ZERO
+	lightning_rect.size = Vector2(1280, 720)
+	lightning_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	weather_layer.add_child(lightning_rect)
+
 	ui_layer = CanvasLayer.new()
 	ui_layer.layer = 10
 	add_child(ui_layer)
@@ -297,6 +319,10 @@ func start_new_run(seed_value: int = 0) -> void:
 	seeds = {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0, "chili": 0}
 	selected_seed = 0
 	rainy = false
+	foggy = false
+	stormy = false
+	fog_rect.color.a = 0.0
+	lightning_rect.color.a = 0.0
 	relic_ids.clear()
 	mods = _fresh_mods()
 	boss = null
@@ -366,17 +392,29 @@ func day_setup() -> void:
 	day_kills = 0
 	fireflies.emitting = false
 	sea.set_night(false)
-	if rainy:
+	var wet := rainy or stormy
+	if wet:
 		for c in crops:
 			if is_instance_valid(c) and not c.mature:
 				c.water()
 		rain_particles.emitting = true
 		Audio.play_ambience("rain")
-		_tween_ambient(Color(0.84, 0.88, 0.97))
-		hud.banner("第 %d 天 · 雨天" % day, Color("#8fd3d6"), 1.0)
 	else:
 		rain_particles.emitting = false
 		Audio.stop_ambience()
+	fog_rect.color.a = 0.16 if foggy else 0.0
+	lightning_rect.color.a = 0.0
+	lightning_t = 2.0
+	if stormy:
+		_tween_ambient(Color(0.56, 0.62, 0.78))
+		hud.banner("第 %d 天 · 雷雨" % day, Color("#b8b0f0"), 1.0)
+	elif foggy:
+		_tween_ambient(Color(0.74, 0.78, 0.86))
+		hud.banner("第 %d 天 · 雾" % day, Color("#c8d6e8"), 1.0)
+	elif rainy:
+		_tween_ambient(Color(0.84, 0.88, 0.97))
+		hud.banner("第 %d 天 · 雨天" % day, Color("#8fd3d6"), 1.0)
+	else:
 		_tween_ambient(Color(1, 1, 1))
 		if endless:
 			hud.banner("无尽 · 第 %d 天" % day, Color("#f2c94c"), 0.9)
@@ -384,10 +422,27 @@ func day_setup() -> void:
 			hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
 	hud.set_day(day, "白天", Color("#8fe0b0"))
 	_seeds_dirty = true
+	if day >= 5:
+		_unlock("day5")
+	if endless and day >= 10:
+		_unlock("endless10")
+	if stormy:
+		_unlock("storm")
 
 
 func _roll_weather() -> void:
-	rainy = day > 1 and rng.randf() < 0.30
+	rainy = false
+	foggy = false
+	stormy = false
+	if day <= 1:
+		return
+	var r := rng.randf()
+	if r < 0.08:
+		stormy = true
+	elif r < 0.18:
+		foggy = true
+	elif r < 0.38:
+		rainy = true
 
 
 # ------------------------------------------------------------------ state flow
@@ -423,7 +478,7 @@ func is_night_phase() -> bool:
 
 
 func is_raining() -> bool:
-	return rainy and state == State.DAY
+	return (rainy or stormy) and state == State.DAY
 
 
 func _is_boss_night(d: int) -> bool:
@@ -432,6 +487,14 @@ func _is_boss_night(d: int) -> bool:
 
 func _process(delta: float) -> void:
 	_tick_shake(delta)
+	if stormy and state == State.DAY:
+		lightning_t -= delta
+		if lightning_t <= 0.0:
+			lightning_t = rng.randf_range(3.5, 8.0)
+			lightning_rect.color = Color(0.95, 0.97, 1.0, 0.55)
+			var flash := create_tween()
+			flash.tween_property(lightning_rect, "color:a", 0.0, 0.3)
+			Audio.sfx("explosion", 0.55, -12.0)
 	if state == State.DAY:
 		phase_time -= delta
 		if phase_time <= 0.0:
@@ -473,7 +536,11 @@ func start_night() -> void:
 	night_queue.shuffle()
 	spawn_timer = 1.1
 	rainy = false
+	foggy = false
+	stormy = false
 	rain_particles.emitting = false
+	fog_rect.color.a = 0.0
+	lightning_rect.color.a = 0.0
 	Audio.stop_ambience()
 	fireflies.emitting = true
 	sea.set_night(true)
@@ -597,7 +664,11 @@ func _end_night() -> void:
 	var killed := day_kills
 	day += 1
 	rainy = false
+	foggy = false
+	stormy = false
 	rain_particles.emitting = false
+	fog_rect.color.a = 0.0
+	lightning_rect.color.a = 0.0
 	Audio.stop_ambience()
 	day_setup()
 	state = State.DAWN
@@ -859,6 +930,19 @@ func _first_stocked_seed(exclude: int) -> int:
 	return -1
 
 
+func _unlock(id: String) -> void:
+	if SaveGame.achievements.has(id):
+		return
+	if test_mode:
+		SaveGame.achievements.append(id)
+		return
+	if SaveGame.add_achievement(id):
+		var info := GameData.achievement_by_id(id)
+		var nm := String(info.get("name", id))
+		hud.banner("成就解锁 · %s" % nm, Color("#f2c94c"), 1.4)
+		Audio.sfx("buy", 1.15, -3.0)
+
+
 func toggle_fullscreen() -> void:
 	var mode := DisplayServer.window_get_mode()
 	if mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
@@ -1035,6 +1119,13 @@ func on_crop_harvested(c: Crop) -> void:
 	crops.erase(c)
 	farm.set_wet(c.cell, false)
 	vibrate(25)
+	SaveGame.crops_harvested += 1
+	_unlock("first_harvest")
+	if SaveGame.crops_harvested >= 50:
+		_unlock("harvest_50")
+	if c.golden:
+		SaveGame.golden_harvested += 1
+		_unlock("golden")
 	var value := int(round(float(c.value) * float(mods["gold"])))
 	gold += value
 	run_gold += value
@@ -1108,6 +1199,9 @@ func on_enemy_died(e: Enemy) -> void:
 	enemies.erase(e)
 	kills += 1
 	day_kills += 1
+	SaveGame.enemies_killed += 1
+	if SaveGame.enemies_killed >= 50:
+		_unlock("kill_50")
 	var value := int(round(float(e.gold) * float(mods["gold"])))
 	gold += value
 	run_gold += value
@@ -1119,6 +1213,7 @@ func on_enemy_died(e: Enemy) -> void:
 	if e == boss:
 		boss = null
 		boss_ending = true
+		_unlock("boss")
 		hud.hide_boss()
 		hud.banner("南瓜王倒下了", Color("#f2c94c"), 1.4)
 		Audio.sfx("explosion")
@@ -1235,8 +1330,13 @@ func _update_hud(force: bool) -> void:
 	if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
 		var night := state == State.NIGHT
 		var phase_text := "夜晚" if night else "白天"
-		if not night and rainy:
-			phase_text = "白天 · 雨"
+		if not night:
+			if stormy:
+				phase_text = "白天 · 雷雨"
+			elif foggy:
+				phase_text = "白天 · 雾"
+			elif rainy:
+				phase_text = "白天 · 雨"
 		if endless:
 			phase_text += " · 无尽"
 		hud.set_day(day, phase_text, Color("#9a8fe0") if night else Color("#8fe0b0"))
@@ -1285,6 +1385,19 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(8, 4), "pumpkin", 0.5)
 			phase_time = 52.0
 			_update_hud(true)
+		"storm":
+			start_new_run(20261029)
+			day = 5
+			stormy = true
+			gold = 73
+			day_setup()
+			lightning_t = 999.0
+			player.position = farm.tile_center(Vector2i(5, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(6, 4), "chili", 1.0)
+			plants_at(Vector2i(7, 4), "moonwheat", 0.7)
+			phase_time = 48.0
+			_update_hud(true)
 		"mobile":
 			start_new_run(20261029)
 			day = 3
@@ -1307,9 +1420,9 @@ func setup_shot(name: String) -> void:
 			player.position = farm.tile_center(Vector2i(7, 4))
 			player.facing = Vector2.DOWN
 			player.invuln = 99.0
-			var spots := [Vector2(52, 32), Vector2(188, 40), Vector2(60, 120), Vector2(184, 118), Vector2(120, 120)]
-			for i in range(5):
-				var e := _spawn_enemy(["slime", "crow", "vine", "slime", "frog"][i])
+			var spots := [Vector2(52, 32), Vector2(188, 40), Vector2(60, 120), Vector2(184, 118), Vector2(120, 120), Vector2(92, 96)]
+			for i in range(6):
+				var e := _spawn_enemy(["slime", "crow", "vine", "slime", "frog", "beetle"][i])
 				e.position = spots[i]
 			_update_hud(true)
 		"dawn":
@@ -1427,6 +1540,7 @@ func run_selftest() -> int:
 	interact()
 	_check(crops.size() == count_before - 1, "harvest removes crop")
 	_check(gold > gold_before, "harvest pays gold")
+	_check(SaveGame.achievements.has("first_harvest"), "first harvest achievement unlocks")
 
 	# moonwheat only grows at night
 	seeds["moonwheat"] = 2
@@ -1451,12 +1565,29 @@ func run_selftest() -> int:
 	var rain_crop: Crop = crops[crops.size() - 1]
 	_check(rain_crop.watered, "rain waters newly planted crops")
 	rainy = false
+	stormy = true
+	_check(is_raining(), "storm counts as wet weather")
+	stormy = false
+	foggy = true
+	_check(not is_raining(), "fog does not water crops")
+	foggy = false
 
 	# frog enemy
 	var frog := _spawn_enemy_at("frog", Vector2(52, 52))
 	_check(frog.kind == "frog", "frog enemy spawns")
 	frog.take_damage(999, Vector2.RIGHT)
 	_check(enemies.is_empty(), "frog can be killed")
+
+	# armored beetle
+	var beetle := _spawn_enemy_at("beetle", Vector2(72, 52))
+	var beetle_hp := beetle.hp
+	beetle.take_damage(1, Vector2.RIGHT)
+	_check(beetle.hp == beetle_hp - 1, "beetle armor floors 1 damage at 1")
+	beetle_hp = beetle.hp
+	beetle.take_damage(3, Vector2.RIGHT)
+	_check(beetle.hp == beetle_hp - 2, "beetle armor subtracts 1 damage")
+	beetle.take_damage(999, Vector2.RIGHT)
+	_check(enemies.is_empty(), "beetle can be killed")
 
 	# seed auto-switch when the selected stack runs out
 	player.position = farm.tile_center(Vector2i(4, 3))

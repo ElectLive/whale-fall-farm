@@ -526,6 +526,43 @@ def frog_frame(step: int) -> Image.Image:
     return im
 
 
+def beetle_frame(step: int) -> Image.Image:
+    im, d = new(16, 16)
+    shell = (58, 63, 85, 255)
+    dark = (35, 38, 52, 255)
+    shine = (106, 122, 154, 255)
+    red = (214, 76, 84, 255)
+    disc(d, 8, 14, 5, 1.5, (20, 26, 36, 90))
+    disc(d, 8, 10, 6, 4, dark)
+    disc(d, 8, 9.5, 5.5, 3.5, shell)
+    box(d, 7, 6, 8, 13, dark)
+    disc(d, 6, 8, 1.5, 1, shine)
+    # horn
+    d.polygon([(7, 6), (8, 2), (9, 6)], fill=dark)
+    px(d, 8, 2, (140, 150, 176, 255))
+    # eyes
+    px(d, 4, 9, red)
+    px(d, 12, 9, red)
+    # legs
+    for y in (10, 12):
+        box(d, 2, y, 3, y, dark)
+        box(d, 13, y, 14, y, dark)
+    if step:
+        box(d, 1, 9, 2, 9, dark)
+        box(d, 14, 9, 15, 9, dark)
+    else:
+        box(d, 2, 8, 3, 8, dark)
+        box(d, 13, 8, 14, 8, dark)
+    return im
+
+
+def beetle_sheet() -> Image.Image:
+    sheet, _ = new(32, 16)
+    for i in range(2):
+        sheet.paste(beetle_frame(i), (i * 16, 0))
+    return sheet
+
+
 def frog_sheet() -> Image.Image:
     sheet, _ = new(32, 16)
     for i in range(2):
@@ -1253,6 +1290,7 @@ def main() -> None:
     save(vine_sheet(), "chars", "vine.png")
     save(boss_sheet(), "chars", "boss_pumpkin.png")
     save(frog_sheet(), "chars", "frog.png")
+    save(beetle_sheet(), "chars", "beetle.png")
     save(shadow(), "chars", "shadow.png")
     # crops
     for i in range(4):

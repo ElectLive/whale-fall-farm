@@ -3,6 +3,22 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v1.4.0 — 2026-10-29
+
+### Added
+
+- Four relics: 锐利镰刃 (20% crit), 丰收护符 (20% heal on harvest), 夜行者帽子 (+1 night damage), 点金手 (+10% golden chance).
+- **铁甲虫 (beetle)** enemy: 9 HP, armor 1 (damage reduced by 1, minimum 1), joins waves from day 5.
+- **Weather expansion**: fog and thunderstorm in addition to rain; storm lightning flashes and thunder SFX; fog overlay; both wet weathers auto-water.
+- **Achievements**: 8 achievements with unlock banners and persistent storage; lifetime harvest/kill/golden counters.
+- HUD weather text for rain/fog/storm; `--shot=storm` screenshot scenario.
+
+### Changed
+
+- Weather roll changed to 62% sunny / 20% rain / 10% fog / 8% storm from day 2.
+- Boss night adds 2 beetles; normal waves add beetles from day 5.
+- Enemy sprite scale now reads the data `scale` field.
+
 ## v1.3.0 — 2026-10-29
 
 ### Added
@@ -106,7 +122,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.3.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.4.0...main
+[v1.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.4.0
 [v1.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.3.0
 [v1.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.2.0
 [v1.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.1.0

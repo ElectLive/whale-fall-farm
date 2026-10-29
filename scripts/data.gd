@@ -54,6 +54,11 @@ const ENEMIES := {
 		"name": "沼泽蛙", "hp": 4, "speed": 62.0, "damage": 1, "gold": 4,
 		"texture": "res://assets/generated/chars/frog.png", "frames": 2, "scale": 1.0,
 	},
+	"beetle": {
+		"name": "铁甲虫", "hp": 9, "speed": 15.0, "damage": 2, "gold": 6,
+		"texture": "res://assets/generated/chars/beetle.png", "frames": 2, "scale": 1.1,
+		"armor": 1,
+	},
 	"boss": {
 		"name": "腐化南瓜王", "hp": 24, "speed": 15.0, "damage": 2, "gold": 60,
 		"texture": "res://assets/generated/chars/boss_pumpkin.png", "frames": 2, "scale": 1.0,
@@ -61,8 +66,18 @@ const ENEMIES := {
 	},
 }
 
-const SHOP_OFFERS := [
-	{"id": "seed_radish", "name": "萝卜种子 ×3", "desc": "长得快，回本快", "price": 6, "icon": "seed_radish"},
+const ACHIEVEMENTS := [
+	{"id": "first_harvest", "name": "第一筐收成", "desc": "收获第一个作物"},
+	{"id": "harvest_50", "name": "农场主", "desc": "累计收获 50 个作物"},
+	{"id": "kill_50", "name": "守夜人", "desc": "累计击杀 50 只怪物"},
+	{"id": "day5", "name": "潮汐幸存者", "desc": "到达第 5 天"},
+	{"id": "boss", "name": "南瓜王的终结", "desc": "击败腐化南瓜王"},
+	{"id": "endless10", "name": "无尽旅人", "desc": "无尽模式到达第 10 天"},
+	{"id": "golden", "name": "点石成金", "desc": "收获一个金色作物"},
+	{"id": "storm", "name": "雷雨夜归人", "desc": "经历一场雷雨"},
+]
+
+const SHOP_OFFERS := [	{"id": "seed_radish", "name": "萝卜种子 ×3", "desc": "长得快，回本快", "price": 6, "icon": "seed_radish"},
 	{"id": "seed_pumpkin", "name": "南瓜种子 ×2", "desc": "沉甸甸的稳健收益", "price": 14, "icon": "seed_pumpkin"},
 	{"id": "seed_star", "name": "星露花种子 ×1", "desc": "很贵，但值得", "price": 18, "icon": "seed_star"},
 	{"id": "seed_moon", "name": "月光麦种子 ×1", "desc": "只在夜里生长", "price": 16, "icon": "seed_moon"},
@@ -104,6 +119,7 @@ static func night_plan(day: int) -> Array:
 			{"kind": "crow", "count": 3},
 			{"kind": "vine", "count": 2},
 			{"kind": "frog", "count": 3},
+			{"kind": "beetle", "count": 2},
 		]
 	var extra := maxi(0, day - 7)
 	return [
@@ -111,6 +127,7 @@ static func night_plan(day: int) -> Array:
 		{"kind": "crow", "count": maxi(0, day - 1) + extra},
 		{"kind": "vine", "count": maxi(0, day - 3) + extra},
 		{"kind": "frog", "count": maxi(0, day - 4) + extra},
+		{"kind": "beetle", "count": maxi(0, day - 5) + extra},
 	]
 
 
@@ -127,4 +144,11 @@ static func relic_by_id(id: String) -> Dictionary:
 	for r in RELICS:
 		if r["id"] == id:
 			return r
+	return {}
+
+
+static func achievement_by_id(id: String) -> Dictionary:
+	for a in ACHIEVEMENTS:
+		if a["id"] == id:
+			return a
 	return {}

@@ -9,14 +9,16 @@
 ![标题界面](screenshots/shot_title.png)
 ![手机实机](screenshots/shot_mobile_phone.png)
 ![雨天](screenshots/shot_rain.png)
+![雷雨](screenshots/shot_storm.png)
 ![南瓜王](screenshots/shot_boss.png)
 
 ## 玩法
 
 - **白天（75 秒）**：走到田里，按互动键松土 → 播种 → 浇水 → 收获。作物只在浇过水之后生长。
-- **天气**：每天有 30% 概率下雨。雨天会自动浇灌所有作物（包括新种下的），雨声和雨丝会一起出现。
-- **夜晚**：潮水带来史莱姆、偷穗鸦、缠根怪和沼泽蛙。用镰刀清场；乌鸦会优先啃食成熟的作物。萤火虫会飘在田上。
+- **天气**：每天有雨天、雾天、雷雨等随机天气。雨天/雷雨会自动浇灌所有作物（包括新种下的）；雾天视野变灰；雷雨会闪电并配雨声。
+- **夜晚**：潮水带来史莱姆、偷穗鸦、缠根怪、沼泽蛙和铁甲虫。用镰刀清场；乌鸦会优先啃食成熟的作物。萤火虫会飘在田上。
 - **黎明**：三选一随机祝福，然后可以在**潮汐商店**用金币买种子、回血、加生命上限。
+- **成就**：8 个成就（首收、50 收、50 杀、第 5 天、Boss、无尽 10 天、金色作物、雷雨）解锁时弹横幅并写入存档。
 - **第 7 夜**：腐化南瓜王苏醒。它会吐种子弹、在血量过半和残血时召唤潮泥怪；打倒它才能迎来胜利。
 - **无尽模式**：通关后可以继续。每 3 天再战一次南瓜王，怪潮越来越厚，直到农场沉没。最佳纪录按存活天数结算。
 - 地图装饰、天气、夜间波次、祝福与商店都是随机的，所以每一局都不一样。
@@ -58,8 +60,8 @@
 
 到 [Releases](https://github.com/ElectLive/whale-fall-farm/releases) 下载最新版：
 
-- Windows：`WhaleFallFarm-v1.3.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
-- Android：`WhaleFallFarm-v1.3.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
+- Windows：`WhaleFallFarm-v1.4.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
+- Android：`WhaleFallFarm-v1.4.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
 
 ## 从源码运行
 
@@ -94,7 +96,7 @@ Godot --headless --path . --export-release "Android" build/android/WhaleFallFarm
 ## 从源码重新生成素材
 
 ```bash
-python tools/gen_art.py     # 82 张像素图 + 图标（需要 Pillow）
+python tools/gen_art.py     # 87 张像素图 + 图标（需要 Pillow）
 python tools/gen_audio.py   # 4 首循环 BGM + 17 个音效 + 1 条雨声（需要 numpy）
 ```
 
@@ -104,7 +106,7 @@ python tools/gen_audio.py   # 4 首循环 BGM + 17 个音效 + 1 条雨声（需
 
 ```bash
 # 无头逻辑测试：种田、昼夜、商店、祝福、Boss、无尽、天气、移动端触控、存档
-Godot --headless --path . -- --selftest     # 54/54 PASS
+Godot --headless --path . -- --selftest     # 64/64 PASS
 
 # 实时冒烟测试：真的种一轮、传送到怪身边砍死几只、进入黎明
 Godot --headless --path . -- --smoke
@@ -161,6 +163,7 @@ docs/
 - **v1.1.0** — 第 4 种作物「月光麦」；新怪物「沼泽蛙」；雨天天气；4 格种子栏。
 - **v1.2.0** — **Android 适配与 APK**：虚拟摇杆、触控攻击/互动/暂停、可点选种子栏、返回键暂停、手机存档路径；Windows 版同步。
 - **v1.3.0** — 第 5 种作物「辣椒」+ 5 格种子栏；金色作物变异（3 倍售价）；手机震动与切后台自动暂停；农事 QoL（种子用完自动切换、收获金额提示）。
+- **v1.4.0** — 4 个新祝福（暴击/收割回血/夜战/点金手）；新怪物「铁甲虫」（护甲减伤）；雾天与雷雨天气（闪电、雨声、自动浇水）；8 个成就与解锁横幅。
 
 ## License
 

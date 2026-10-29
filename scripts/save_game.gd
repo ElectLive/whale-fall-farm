@@ -9,6 +9,10 @@ var total_gold := 0
 var music_on := true
 var sfx_on := true
 var vibration_on := true
+var achievements: Array[String] = []
+var crops_harvested := 0
+var enemies_killed := 0
+var golden_harvested := 0
 var PATH := ""
 
 
@@ -39,6 +43,14 @@ func load_data() -> void:
 	music_on = bool(cfg.get_value("settings", "music_on", true))
 	sfx_on = bool(cfg.get_value("settings", "sfx_on", true))
 	vibration_on = bool(cfg.get_value("settings", "vibration_on", true))
+	crops_harvested = int(cfg.get_value("records", "crops_harvested", 0))
+	enemies_killed = int(cfg.get_value("records", "enemies_killed", 0))
+	golden_harvested = int(cfg.get_value("records", "golden_harvested", 0))
+	var arr = cfg.get_value("records", "achievements", [])
+	achievements.clear()
+	if arr is Array:
+		for a in arr:
+			achievements.append(str(a))
 
 
 func save_data() -> void:
@@ -52,6 +64,10 @@ func save_data() -> void:
 	cfg.set_value("settings", "music_on", music_on)
 	cfg.set_value("settings", "sfx_on", sfx_on)
 	cfg.set_value("settings", "vibration_on", vibration_on)
+	cfg.set_value("records", "crops_harvested", crops_harvested)
+	cfg.set_value("records", "enemies_killed", enemies_killed)
+	cfg.set_value("records", "golden_harvested", golden_harvested)
+	cfg.set_value("records", "achievements", achievements)
 	var err := cfg.save(PATH)
 	if err != OK:
 		push_warning("whale_fall_farm: could not save records (%s, err %d)" % [PATH, err])
@@ -70,3 +86,11 @@ func update_best(day: int, kills: int) -> void:
 	best_day = maxi(best_day, day)
 	best_kills = maxi(best_kills, kills)
 	save_data()
+
+
+func add_achievement(id: String) -> bool:
+	if achievements.has(id):
+		return false
+	achievements.append(id)
+	save_data()
+	return true

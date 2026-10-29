@@ -11,6 +11,7 @@ var max_hp := 3
 var speed := 20.0
 var damage := 1
 var gold := 2
+var armor := 0
 var dead := false
 var flash := 0.0
 var anim_t := 0.0
@@ -40,6 +41,7 @@ func setup(enemy_kind: String, at: Vector2, game_ref: Node, hp_mult: float = 1.0
 	speed = float(info["speed"])
 	damage = int(info["damage"])
 	gold = int(info["gold"])
+	armor = int(info.get("armor", 0))
 	position = at
 
 
@@ -69,7 +71,7 @@ func _ready() -> void:
 	sprite.frame = 0
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.position = Vector2(0, -3) if not is_boss else Vector2(0, -10)
-	var enemy_scale := 1.18 if kind == "vine" else 1.0
+	var enemy_scale := 1.18 if kind == "vine" else float(info.get("scale", 1.0))
 	if is_boss:
 		enemy_scale = 1.15
 	sprite.scale = Vector2(enemy_scale, enemy_scale)
@@ -205,6 +207,8 @@ func _nearest_crop() -> Crop:
 func take_damage(amount: int, from_dir: Vector2) -> void:
 	if dead:
 		return
+	if armor > 0:
+		amount = maxi(1, amount - armor)
 	hp -= amount
 	flash = 0.22
 	knock = from_dir.normalized() * (26.0 if is_boss else 70.0)
