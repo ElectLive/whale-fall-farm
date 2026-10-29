@@ -3,6 +3,22 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v1.3.0 — 2026-10-29
+
+### Added
+
+- Fifth crop **辣椒 (chili)**: 11g seeds, 11s growth, 30g sale, joins the shop rotation.
+- Five-slot seed belt with clickable slots, `1`–`5` hotkeys and auto-switch when a stack runs out.
+- **Golden crops**: 5% (+luck) chance on planting, 3× sale value, +15% seed return, golden glow.
+- Mobile haptics on hurt / kill / harvest / boss death, with a persisted vibration toggle.
+- Auto-pause when the app loses focus on mobile.
+- Harvest prompt now shows the exact gold value (and golden tag).
+
+### Changed
+
+- HUD seed panel widened for five slots; hint text updated to `1-5`.
+- `current_action` no-seed and plant labels are clearer.
+
 ## v1.2.0 — 2026-10-29
 
 ### Added
@@ -90,7 +106,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.2.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.3.0...main
+[v1.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.3.0
 [v1.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.2.0
 [v1.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.1.0
 [v1.0.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.0.0

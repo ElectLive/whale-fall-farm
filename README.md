@@ -29,6 +29,7 @@
 | 南瓜 | 9 | 13s | 24 | 稳健 |
 | 星露花 | 20 | 20s | 54 | 最贵 |
 | 月光麦 | 16 | 9s（仅夜晚） | 44 | 白天打盹，夜里疯长 |
+| 辣椒 | 11 | 11s | 30 | 中价中速，补空档 |
 
 ## 操作
 
@@ -38,7 +39,7 @@
 | --- | --- |
 | `WASD` / 方向键 | 移动 |
 | `E` | 互动：松土 / 播种 / 浇水 / 收获 |
-| `1` `2` `3` `4` | 切换种子（也可直接点种子栏） |
+| `1` `2` `3` `4` `5` | 切换种子（也可直接点种子栏） |
 | `空格` / 鼠标左键 | 挥镰攻击（鼠标会朝指针方向挥） |
 | `Esc` | 暂停（内有音乐 / 音效 / 全屏开关） |
 | `M` | 快速开关音乐 |
@@ -57,8 +58,8 @@
 
 到 [Releases](https://github.com/ElectLive/whale-fall-farm/releases) 下载最新版：
 
-- Windows：`WhaleFallFarm-v1.2.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
-- Android：`WhaleFallFarm-v1.2.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
+- Windows：`WhaleFallFarm-v1.3.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
+- Android：`WhaleFallFarm-v1.3.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
 
 ## 从源码运行
 
@@ -93,7 +94,7 @@ Godot --headless --path . --export-release "Android" build/android/WhaleFallFarm
 ## 从源码重新生成素材
 
 ```bash
-python tools/gen_art.py     # 77 张像素图 + 图标（需要 Pillow）
+python tools/gen_art.py     # 82 张像素图 + 图标（需要 Pillow）
 python tools/gen_audio.py   # 4 首循环 BGM + 17 个音效 + 1 条雨声（需要 numpy）
 ```
 
@@ -103,7 +104,7 @@ python tools/gen_audio.py   # 4 首循环 BGM + 17 个音效 + 1 条雨声（需
 
 ```bash
 # 无头逻辑测试：种田、昼夜、商店、祝福、Boss、无尽、天气、移动端触控、存档
-Godot --headless --path . -- --selftest     # 50/50 PASS
+Godot --headless --path . -- --selftest     # 54/54 PASS
 
 # 实时冒烟测试：真的种一轮、传送到怪身边砍死几只、进入黎明
 Godot --headless --path . -- --smoke
@@ -159,6 +160,7 @@ docs/
 - **v1.0.0** — 无尽模式（通关后继续，每 3 天再战南瓜王）；记录/最佳成绩继续更新。
 - **v1.1.0** — 第 4 种作物「月光麦」；新怪物「沼泽蛙」；雨天天气；4 格种子栏。
 - **v1.2.0** — **Android 适配与 APK**：虚拟摇杆、触控攻击/互动/暂停、可点选种子栏、返回键暂停、手机存档路径；Windows 版同步。
+- **v1.3.0** — 第 5 种作物「辣椒」+ 5 格种子栏；金色作物变异（3 倍售价）；手机震动与切后台自动暂停；农事 QoL（种子用完自动切换、收获金额提示）。
 
 ## License
 

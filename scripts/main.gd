@@ -1245,7 +1245,12 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(7, 4), "radish", 1.0)
 			plants_at(Vector2i(8, 4), "star", 0.5)
 			plants_at(Vector2i(9, 4), "moonwheat", 0.65)
+			plants_at(Vector2i(10, 4), "chili", 1.0)
 			plants_at(Vector2i(6, 5), "radish", 0.35)
+			for c in crops:
+				if c.kind == "radish" and c.mature:
+					c.make_golden()
+					break
 			phase_time = 46.0
 			_update_hud(true)
 		"rain":
