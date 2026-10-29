@@ -1,0 +1,227 @@
+class_name Hud
+extends Control
+## In-game HUD: day, timer, gold, hearts, seed belt and context prompt.
+
+const HEART_FULL := preload("res://assets/generated/ui/heart_full.png")
+const HEART_EMPTY := preload("res://assets/generated/ui/heart_empty.png")
+const COIN := preload("res://assets/generated/ui/coin.png")
+const SUN := preload("res://assets/generated/ui/sun.png")
+const MOON := preload("res://assets/generated/ui/moon.png")
+
+var day_label: Label
+var phase_label: Label
+var relic_label: Label
+var time_label: Label
+var time_icon: TextureRect
+var gold_label: Label
+var wave_label: Label
+var prompt_label: Label
+var hearts: HBoxContainer
+var seed_panels: Array[PanelContainer] = []
+var seed_counts: Array[Label] = []
+var progress: ProgressBar
+var damage_flash: ColorRect
+var _progress_fill: StyleBoxFlat
+
+
+func _ready() -> void:
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	theme = UiKit.theme()
+	_build()
+
+
+func _build() -> void:
+	# day / phase
+	var day_panel := UiKit.panel_container(12)
+	day_panel.position = Vector2(16, 16)
+	day_panel.size = Vector2(250, 104)
+	add_child(day_panel)
+	var dv := VBoxContainer.new()
+	dv.add_theme_constant_override("separation", 0)
+	day_panel.add_child(dv)
+	day_label = UiKit.label("第 1 天", 34, Color("#f6e7b4"))
+	dv.add_child(day_label)
+	phase_label = UiKit.label("白天", 22, Color("#8fe0b0"))
+	dv.add_child(phase_label)
+	relic_label = UiKit.label("祝福 × 0", 18, Color("#9fb0c8"))
+	dv.add_child(relic_label)
+
+	# timer
+	var timer_panel := UiKit.panel_container(10)
+	timer_panel.position = Vector2(470, 16)
+	timer_panel.size = Vector2(340, 104)
+	add_child(timer_panel)
+	var tv := VBoxContainer.new()
+	tv.add_theme_constant_override("separation", 2)
+	timer_panel.add_child(tv)
+	var th := HBoxContainer.new()
+	th.alignment = BoxContainer.ALIGNMENT_CENTER
+	th.add_theme_constant_override("separation", 10)
+	tv.add_child(th)
+	time_icon = UiKit.icon("res://assets/generated/ui/sun.png", 40)
+	th.add_child(time_icon)
+	time_label = UiKit.label("1:30", 38, Color("#f6e7b4"))
+	th.add_child(time_label)
+	progress = ProgressBar.new()
+	progress.custom_minimum_size = Vector2(280, 8)
+	progress.show_percentage = false
+	progress.max_value = 1.0
+	progress.value = 1.0
+	progress.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.06, 0.09, 0.14, 0.9)
+	bg.corner_radius_top_left = 3
+	bg.corner_radius_top_right = 3
+	bg.corner_radius_bottom_left = 3
+	bg.corner_radius_bottom_right = 3
+	_progress_fill = StyleBoxFlat.new()
+	_progress_fill.bg_color = Color("#7fd8c8")
+	_progress_fill.corner_radius_top_left = 3
+	_progress_fill.corner_radius_top_right = 3
+	_progress_fill.corner_radius_bottom_left = 3
+	_progress_fill.corner_radius_bottom_right = 3
+	progress.add_theme_stylebox_override("background", bg)
+	progress.add_theme_stylebox_override("fill", _progress_fill)
+	tv.add_child(progress)
+
+	# gold / wave
+	var gold_panel := UiKit.panel_container(10)
+	gold_panel.position = Vector2(980, 16)
+	gold_panel.size = Vector2(284, 104)
+	add_child(gold_panel)
+	var gv := VBoxContainer.new()
+	gv.add_theme_constant_override("separation", 0)
+	gold_panel.add_child(gv)
+	var gh := HBoxContainer.new()
+	gh.alignment = BoxContainer.ALIGNMENT_END
+	gh.add_theme_constant_override("separation", 8)
+	gv.add_child(gh)
+	var coin := UiKit.icon("res://assets/generated/ui/coin.png", 36)
+	gh.add_child(coin)
+	gold_label = UiKit.label("0", 38, Color("#f2c94c"))
+	gh.add_child(gold_label)
+	wave_label = UiKit.label("作物 0 株", 18, Color("#9fb0c8"))
+	wave_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	gv.add_child(wave_label)
+
+	# hearts
+	var heart_panel := UiKit.panel_container(8)
+	heart_panel.position = Vector2(16, 636)
+	heart_panel.size = Vector2(320, 68)
+	add_child(heart_panel)
+	hearts = HBoxContainer.new()
+	hearts.add_theme_constant_override("separation", 3)
+	hearts.alignment = BoxContainer.ALIGNMENT_CENTER
+	heart_panel.add_child(hearts)
+	for i in range(12):
+		var h := TextureRect.new()
+		h.texture = HEART_FULL
+		h.custom_minimum_size = Vector2(22, 22)
+		h.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		h.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		h.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		hearts.add_child(h)
+
+	# seed belt + prompt
+	var seed_panel := UiKit.panel_container(8)
+	seed_panel.position = Vector2(400, 608)
+	seed_panel.size = Vector2(480, 100)
+	add_child(seed_panel)
+	var sv := VBoxContainer.new()
+	sv.add_theme_constant_override("separation", 2)
+	seed_panel.add_child(sv)
+	prompt_label = UiKit.label("E · 走到田里开始干活", 22, Color("#f6e7b4"))
+	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sv.add_child(prompt_label)
+	var sh := HBoxContainer.new()
+	sh.add_theme_constant_override("separation", 6)
+	sh.alignment = BoxContainer.ALIGNMENT_CENTER
+	sv.add_child(sh)
+	for i in range(3):
+		var slot := PanelContainer.new()
+		slot.custom_minimum_size = Vector2(146, 54)
+		slot.add_theme_stylebox_override("panel", UiKit.make_texture_style(UiKit.TEX_PANEL, 8, 8))
+		sh.add_child(slot)
+		var hh := HBoxContainer.new()
+		hh.add_theme_constant_override("separation", 4)
+		slot.add_child(hh)
+		var key := UiKit.label(str(i + 1), 18, Color("#9fb0c8"))
+		key.custom_minimum_size = Vector2(14, 0)
+		hh.add_child(key)
+		var crop_id: String = GameData.CROP_ORDER[i]
+		var ic := UiKit.icon("res://assets/generated/ui/seed_%s.png" % crop_id, 34)
+		hh.add_child(ic)
+		var vv := VBoxContainer.new()
+		vv.add_theme_constant_override("separation", -4)
+		hh.add_child(vv)
+		vv.add_child(UiKit.label(GameData.CROPS[crop_id]["name"], 16, Color("#c8d6e8")))
+		var cnt := UiKit.label("×0", 22, Color("#f6e7b4"))
+		vv.add_child(cnt)
+		seed_panels.append(slot)
+		seed_counts.append(cnt)
+
+	var hint := UiKit.label("E 互动 · 空格 挥镰 · 1/2/3 选种 · Esc 暂停", 16, Color(0.72, 0.8, 0.9, 0.65))
+	hint.position = Vector2(900, 668)
+	hint.size = Vector2(364, 30)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(hint)
+
+	damage_flash = ColorRect.new()
+	damage_flash.color = Color(0.8, 0.1, 0.15, 0.0)
+	damage_flash.position = Vector2.ZERO
+	damage_flash.size = Vector2(1280, 720)
+	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(damage_flash)
+
+
+func set_day(day: int, phase_text: String, phase_color: Color) -> void:
+	day_label.text = "第 %d 天" % day
+	phase_label.text = phase_text
+	phase_label.add_theme_color_override("font_color", phase_color)
+
+
+func set_timer(seconds_left: float, total: float, is_night: bool) -> void:
+	var s := maxi(0, ceili(seconds_left))
+	time_label.text = "%d:%02d" % [s / 60, s % 60]
+	time_icon.texture = MOON if is_night else SUN
+	progress.value = clampf(seconds_left / maxf(total, 0.001), 0.0, 1.0)
+	_progress_fill.bg_color = Color("#9a8fe0") if is_night else Color("#7fd8c8")
+	time_label.add_theme_color_override("font_color", Color("#b8b0f0") if is_night else Color("#f6e7b4"))
+
+
+func set_gold(value: int) -> void:
+	gold_label.text = str(value)
+
+
+func set_wave(text: String) -> void:
+	wave_label.text = text
+
+
+func set_relic_count(count: int) -> void:
+	relic_label.text = "祝福 × %d" % count
+
+
+func set_prompt(text: String, color: Color = UiKit.GOLD) -> void:
+	prompt_label.text = text
+	prompt_label.add_theme_color_override("font_color", color)
+
+
+func refresh_hearts(hp: int, max_hp: int) -> void:
+	for i in range(hearts.get_child_count()):
+		var h := hearts.get_child(i) as TextureRect
+		h.visible = i < max_hp
+		h.texture = HEART_FULL if i < hp else HEART_EMPTY
+
+
+func refresh_seeds(counts: Array, selected: int) -> void:
+	for i in range(3):
+		seed_counts[i].text = "×%d" % int(counts[i])
+		var style := UiKit.make_texture_style(UiKit.TEX_PANEL_SEL if i == selected else UiKit.TEX_PANEL, 8, 8)
+		seed_panels[i].add_theme_stylebox_override("panel", style)
+
+
+func flash_damage() -> void:
+	damage_flash.color.a = 0.35
+	var tw := create_tween()
+	tw.tween_property(damage_flash, "color:a", 0.0, 0.35)
