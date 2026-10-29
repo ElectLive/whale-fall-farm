@@ -30,6 +30,7 @@ var fog_rect: ColorRect
 var lightning_rect: ColorRect
 var hud: Hud
 var title_screen: TitleScreen
+var codex_screen: CodexScreen
 var dawn_screen: DawnScreen
 var end_screen: EndScreen
 var pause_screen: PauseScreen
@@ -234,6 +235,8 @@ func _build_ui() -> void:
 	add_child(overlay_layer)
 	title_screen = TitleScreen.new()
 	overlay_layer.add_child(title_screen)
+	codex_screen = CodexScreen.new()
+	overlay_layer.add_child(codex_screen)
 	dawn_screen = DawnScreen.new()
 	overlay_layer.add_child(dawn_screen)
 	end_screen = EndScreen.new()
@@ -244,7 +247,9 @@ func _build_ui() -> void:
 
 func _connect_ui() -> void:
 	title_screen.start_requested.connect(func() -> void: start_new_run())
+	title_screen.codex_requested.connect(_show_codex)
 	title_screen.quit_requested.connect(func() -> void: get_tree().quit())
+	codex_screen.closed.connect(_hide_codex)
 	dawn_screen.relic_chosen.connect(_on_relic_chosen)
 	dawn_screen.continue_pressed.connect(_on_dawn_continue)
 	dawn_screen.shop_buy.connect(_on_shop_buy)
@@ -295,6 +300,7 @@ func show_title() -> void:
 	world.visible = false
 	hud.visible = false
 	title_screen.visible = true
+	codex_screen.visible = false
 	dawn_screen.visible = false
 	end_screen.visible = false
 	pause_screen.visible = false
@@ -303,6 +309,16 @@ func show_title() -> void:
 	if mobile:
 		mobile.set_active(false)
 	Audio.play_music("title")
+
+func _show_codex() -> void:
+	title_screen.visible = false
+	codex_screen.show_codex()
+
+
+func _hide_codex() -> void:
+	codex_screen.visible = false
+	title_screen.visible = true
+
 
 func start_new_run(seed_value: int = 0) -> void:
 	_clear_run()
@@ -562,6 +578,8 @@ func _spawn_boss() -> void:
 	entities.add_child(e)
 	enemies.append(e)
 	boss = e
+	if not test_mode:
+		SaveGame.discover_enemy("boss")
 	hud.show_boss(String(GameData.ENEMIES["boss"]["name"]), e.hp, e.max_hp)
 	hud.banner("腐化南瓜王苏醒了", Color("#ff9a5c"), 1.8)
 	Audio.play_music("boss")
@@ -587,6 +605,8 @@ func _spawn_enemy_at(kind: String, pos: Vector2) -> Enemy:
 	e.setup(kind, pos, self, GameData.hp_scale(day))
 	entities.add_child(e)
 	enemies.append(e)
+	if not test_mode:
+		SaveGame.discover_enemy(kind)
 	burst(pos, Color("#9a8fe0"), 6)
 	return e
 
@@ -720,6 +740,8 @@ func _on_relic_chosen(id: String) -> void:
 	if relic.is_empty() or relic_ids.has(id):
 		return
 	relic_ids.append(id)
+	if not test_mode:
+		SaveGame.discover_relic(id)
 	_apply_relic(id)
 	hud.set_relic_count(relic_ids.size())
 
@@ -1105,6 +1127,8 @@ func _plant(id: String, t: Vector2i) -> void:
 	crops_root.add_child(c)
 	crops.append(c)
 	farm.set_wet(t, false)
+	if not test_mode:
+		SaveGame.discover_crop(id)
 	if is_raining():
 		c.water()
 	if rng.randf() < 0.05 + float(mods["luck"]) * 0.2 + float(mods["golden_chance"]):
@@ -1354,6 +1378,13 @@ func setup_shot(name: String) -> void:
 	match name:
 		"title":
 			show_title()
+		"codex":
+			show_title()
+			_show_codex()
+		"stats":
+			show_title()
+			_show_codex()
+			codex_screen._show_stats()
 		"day":
 			start_new_run(20261029)
 			day = 3

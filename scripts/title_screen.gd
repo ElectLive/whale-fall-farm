@@ -3,6 +3,7 @@ extends Control
 ## Title screen shown on boot.
 
 signal start_requested
+signal codex_requested
 signal quit_requested
 
 var _title: Label
@@ -60,19 +61,27 @@ func _build() -> void:
 	add_child(start)
 
 	var help_btn := UiKit.button("操作说明", 26)
-	help_btn.position = Vector2(100, 404)
+	help_btn.position = Vector2(100, 398)
 	help_btn.size = Vector2(330, 54)
 	help_btn.pressed.connect(_toggle_help)
 	add_child(help_btn)
 
+	var codex := UiKit.button("农场图鉴", 26)
+	codex.position = Vector2(100, 464)
+	codex.size = Vector2(330, 54)
+	codex.pressed.connect(func() -> void:
+		Audio.sfx("click")
+		codex_requested.emit())
+	add_child(codex)
+
 	var quit := UiKit.button("离开", 26)
-	quit.position = Vector2(100, 470)
+	quit.position = Vector2(100, 530)
 	quit.size = Vector2(330, 54)
 	quit.pressed.connect(func() -> void: quit_requested.emit())
 	add_child(quit)
 
 	var best := UiKit.label(_best_text(), 22, Color("#f2c94c"))
-	best.position = Vector2(100, 566)
+	best.position = Vector2(100, 610)
 	best.size = Vector2(620, 30)
 	add_child(best)
 

@@ -13,6 +13,9 @@ var achievements: Array[String] = []
 var crops_harvested := 0
 var enemies_killed := 0
 var golden_harvested := 0
+var discovered_crops: Array[String] = []
+var discovered_enemies: Array[String] = []
+var discovered_relics: Array[String] = []
 var PATH := ""
 
 
@@ -51,6 +54,17 @@ func load_data() -> void:
 	if arr is Array:
 		for a in arr:
 			achievements.append(str(a))
+	_load_list(cfg, "discovered_crops", discovered_crops)
+	_load_list(cfg, "discovered_enemies", discovered_enemies)
+	_load_list(cfg, "discovered_relics", discovered_relics)
+
+
+func _load_list(cfg: ConfigFile, key: String, target: Array[String]) -> void:
+	target.clear()
+	var arr = cfg.get_value("records", key, [])
+	if arr is Array:
+		for a in arr:
+			target.append(str(a))
 
 
 func save_data() -> void:
@@ -68,6 +82,9 @@ func save_data() -> void:
 	cfg.set_value("records", "enemies_killed", enemies_killed)
 	cfg.set_value("records", "golden_harvested", golden_harvested)
 	cfg.set_value("records", "achievements", achievements)
+	cfg.set_value("records", "discovered_crops", discovered_crops)
+	cfg.set_value("records", "discovered_enemies", discovered_enemies)
+	cfg.set_value("records", "discovered_relics", discovered_relics)
 	var err := cfg.save(PATH)
 	if err != OK:
 		push_warning("whale_fall_farm: could not save records (%s, err %d)" % [PATH, err])
@@ -92,5 +109,29 @@ func add_achievement(id: String) -> bool:
 	if achievements.has(id):
 		return false
 	achievements.append(id)
+	save_data()
+	return true
+
+
+func discover_crop(id: String) -> bool:
+	if discovered_crops.has(id):
+		return false
+	discovered_crops.append(id)
+	save_data()
+	return true
+
+
+func discover_enemy(id: String) -> bool:
+	if discovered_enemies.has(id):
+		return false
+	discovered_enemies.append(id)
+	save_data()
+	return true
+
+
+func discover_relic(id: String) -> bool:
+	if discovered_relics.has(id):
+		return false
+	discovered_relics.append(id)
 	save_data()
 	return true
