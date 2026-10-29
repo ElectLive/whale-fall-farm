@@ -86,6 +86,10 @@ const RELICS := [
 	{"id": "nightglass", "name": "夜视螺镜", "desc": "夜晚移动速度 +20%", "icon": "relic_nightglass", "color": "#9a8fe0"},
 	{"id": "slowcharm", "name": "潮雾提灯", "desc": "夜晚怪物移动速度 -12%", "icon": "relic_slowcharm", "color": "#8fd3d6"},
 	{"id": "greenthumb", "name": "绿拇指", "desc": "浇水时作物立即获得 15% 生长进度", "icon": "relic_greenthumb", "color": "#8fe0b0"},
+	{"id": "crit", "name": "锐利镰刃", "desc": "20% 概率造成双倍伤害", "icon": "relic_crit", "color": "#c8d2e0"},
+	{"id": "harvest", "name": "丰收护符", "desc": "收获时有 20% 概率回复 1 点生命", "icon": "relic_harvest", "color": "#f2c94c"},
+	{"id": "night", "name": "夜行者帽子", "desc": "夜晚镰刀伤害 +1", "icon": "relic_night", "color": "#9a8fe0"},
+	{"id": "golden", "name": "点金手", "desc": "金色作物出现概率 +10%", "icon": "relic_golden", "color": "#f2c94c"},
 ]
 
 

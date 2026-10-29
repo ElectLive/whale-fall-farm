@@ -92,6 +92,7 @@ func _fresh_mods() -> Dictionary:
 		"range": 1.0, "lifesteal": 0.0, "thorns": 0, "luck": 0.0,
 		"dawn_heal": 0, "night_move": 1.0, "maxhp": 0,
 		"slow": 1.0, "water_boost": 0.0,
+		"crit_chance": 0.0, "harvest_heal": 0.0, "night_dmg": 0.0, "golden_chance": 0.0,
 	}
 
 
@@ -685,6 +686,14 @@ func _apply_relic(id: String) -> void:
 			mods["slow"] *= 0.88
 		"greenthumb":
 			mods["water_boost"] += 0.15
+		"crit":
+			mods["crit_chance"] += 0.2
+		"harvest":
+			mods["harvest_heal"] += 0.2
+		"night":
+			mods["night_dmg"] += 1
+		"golden":
+			mods["golden_chance"] += 0.1
 	_update_hud(true)
 
 
@@ -1014,7 +1023,7 @@ func _plant(id: String, t: Vector2i) -> void:
 	farm.set_wet(t, false)
 	if is_raining():
 		c.water()
-	if rng.randf() < 0.05 + float(mods["luck"]) * 0.2:
+	if rng.randf() < 0.05 + float(mods["luck"]) * 0.2 + float(mods["golden_chance"]):
 		c.make_golden()
 		float_text("金色作物！", c.position + Vector2(0, -18), Color("#f2c94c"), 9)
 		burst(c.position, Color("#f2c94c"), 10)
@@ -1037,6 +1046,9 @@ func on_crop_harvested(c: Crop) -> void:
 	if c.golden:
 		float_text("金色 ×3", c.position + Vector2(0, -22), Color("#ffe9a8"), 9)
 		burst(c.position, Color("#f2c94c"), 10)
+	if player and rng.randf() < float(mods["harvest_heal"]):
+		player.heal(1)
+		float_text("+1", player.position + Vector2(0, -22), Color("#8fe0b0"), 9)
 	if rng.randf() < float(c.seed_drop) + float(mods["luck"]) * 0.5:
 		seeds[c.kind] = int(seeds[c.kind]) + 1
 		float_text("+1 种子", c.position + Vector2(0, -20), Color("#8fe0b0"), 8)
@@ -1065,6 +1077,11 @@ func crow_eat_crop(_crow: Enemy, c: Crop) -> void:
 func player_attack(p: Player, dir: Vector2) -> void:
 	var reach := (26.0 + 6.0) * range_mult()
 	var dmg := int(round(float(mods["dmg"])))
+	if state == State.NIGHT:
+		dmg += int(mods["night_dmg"])
+	var crit := rng.randf() < float(mods["crit_chance"])
+	if crit:
+		dmg *= 2
 	var hit_any := false
 	for e in enemies.duplicate():
 		if not is_instance_valid(e) or e.dead:
@@ -1072,6 +1089,8 @@ func player_attack(p: Player, dir: Vector2) -> void:
 		var d: Vector2 = e.global_position - p.global_position
 		if d.length() <= reach and (d.length() < 10.0 or dir.dot(d.normalized()) > 0.15):
 			e.take_damage(dmg, d)
+			if crit:
+				float_text("暴击！", e.global_position + Vector2(0, -24), Color("#ffe9a8"), 10)
 			hit_any = true
 	if hit_any:
 		Audio.sfx("hit")
@@ -1493,6 +1512,14 @@ func run_selftest() -> int:
 	_check(is_equal_approx(float(mods["slow"]), 0.88), "slowcharm nerfs night monsters")
 	_on_relic_chosen("greenthumb")
 	_check(is_equal_approx(float(mods["water_boost"]), 0.15), "greenthumb adds watering boost")
+	_on_relic_chosen("crit")
+	_check(is_equal_approx(float(mods["crit_chance"]), 0.2), "crit relic adds crit chance")
+	_on_relic_chosen("harvest")
+	_check(is_equal_approx(float(mods["harvest_heal"]), 0.2), "harvest relic adds heal chance")
+	_on_relic_chosen("night")
+	_check(int(mods["night_dmg"]) == 1, "night relic adds night damage")
+	_on_relic_chosen("golden")
+	_check(is_equal_approx(float(mods["golden_chance"]), 0.1), "golden relic adds mutation chance")
 	Audio.set_music_on(false)
 	_check(is_equal_approx(Audio.music_level, 0.0), "music can be muted")
 	Audio.set_music_on(true)

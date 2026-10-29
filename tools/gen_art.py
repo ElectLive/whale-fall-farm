@@ -1015,6 +1015,33 @@ def relic_icon(kind: str) -> Image.Image:
         px(d, 10, 6, C["green2"])
         px(d, 18, 17, C["cyan"])
         px(d, 19, 18, C["cyan2"])
+    elif kind == "crit":
+        d.polygon([(5, 18), (16, 4), (19, 7), (8, 20)], fill=C["white"])
+        d.polygon([(6, 17), (16, 5), (18, 7), (8, 18)], fill=(190, 210, 230, 255))
+        box(d, 4, 17, 8, 21, C["wood0"])
+        for x, y in ((18, 3), (20, 6), (15, 2)):
+            px(d, x, y, C["gold"])
+    elif kind == "harvest":
+        box(d, 12, 5, 13, 20, C["green2"])
+        for i, (x, y) in enumerate(((9, 5), (11, 7), (9, 9), (11, 11), (9, 13))):
+            disc(d, x, y, 2, 1.5, C["gold"])
+        disc(d, 16, 16, 4, 3.5, C["red"])
+        box(d, 15, 12, 17, 15, C["red"])
+        px(d, 15, 14, (255, 160, 160, 255))
+    elif kind == "night":
+        disc(d, 12, 12, 8, 8, C["ink2"])
+        disc(d, 14, 10, 5, 5, C["white"])
+        disc(d, 12, 9, 4, 4, C["ink2"])
+        for x, y in ((6, 6), (18, 6), (6, 18), (18, 18)):
+            px(d, x, y, C["gold"])
+    elif kind == "golden":
+        disc(d, 12, 13, 5, 5, C["gold2"])
+        disc(d, 12, 12, 4, 4, C["gold"])
+        box(d, 10, 4, 14, 8, C["green2"])
+        px(d, 9, 5, C["green"])
+        px(d, 15, 5, C["green"])
+        for x, y in ((4, 4), (20, 8), (5, 18), (19, 17)):
+            px(d, x, y, C["white"])
     else:
         disc(d, 12, 12, 8, 8, C["border"])
     return im
@@ -1250,7 +1277,7 @@ def main() -> None:
         save(tool_icon(k), "ui", f"icon_{k}.png")
     for rid in ("boots", "whetstone", "blubber", "metronome", "rainbell", "goldseed",
                 "fang", "thorns", "clover", "tideheart", "longhandle", "nightglass",
-                "slowcharm", "greenthumb"):
+                "slowcharm", "greenthumb", "crit", "harvest", "night", "golden"):
         save(relic_icon(rid), "ui", f"relic_{rid}.png")
     save(spark(), "fx", "spark.png")
     save(glow(), "fx", "glow.png")
