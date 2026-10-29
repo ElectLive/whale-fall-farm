@@ -4,6 +4,7 @@ extends Control
 
 signal restart_requested
 signal title_requested
+signal endless_requested
 
 var _panel: PanelContainer
 var _kind := ""
@@ -15,7 +16,7 @@ func _ready() -> void:
 	visible = false
 
 
-func show_result(kind: String, day: int, kills: int, gold: int, new_best: bool) -> void:
+func show_result(kind: String, day: int, kills: int, gold: int, new_best: bool, can_endless: bool = false) -> void:
 	_kind = kind
 	for c in get_children():
 		c.queue_free()
@@ -58,12 +59,19 @@ func show_result(kind: String, day: int, kills: int, gold: int, new_best: bool) 
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 24)
 	v.add_child(row)
-	var again := UiKit.button("再来一局", 28)
-	again.custom_minimum_size = Vector2(220, 60)
+	var again := UiKit.button("再来一局", 26)
+	again.custom_minimum_size = Vector2(200, 60)
 	again.pressed.connect(func() -> void:
 		Audio.sfx("click")
 		restart_requested.emit())
 	row.add_child(again)
+	if victory and can_endless:
+		var endless := UiKit.button("继续无尽", 24)
+		endless.custom_minimum_size = Vector2(180, 60)
+		endless.pressed.connect(func() -> void:
+			Audio.sfx("click")
+			endless_requested.emit())
+		row.add_child(endless)
 	var home := UiKit.button("回到标题", 24)
 	home.custom_minimum_size = Vector2(180, 60)
 	home.pressed.connect(func() -> void:

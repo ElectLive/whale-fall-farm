@@ -56,6 +56,9 @@ var night_queue: Array[String] = []
 var spawn_timer := 0.0
 var enrage_done := false
 var run_active := false
+var endless := false
+var _run_recorded := false
+var test_mode := false
 var _shake := 0.0
 var _ambient_tween: Tween
 var _seeds_dirty := true
@@ -191,6 +194,7 @@ func _connect_ui() -> void:
 	dawn_screen.shop_buy.connect(_on_shop_buy)
 	end_screen.restart_requested.connect(func() -> void: start_new_run())
 	end_screen.title_requested.connect(show_title)
+	end_screen.endless_requested.connect(_on_endless_requested)
 	pause_screen.resume_requested.connect(_toggle_pause)
 	pause_screen.title_requested.connect(show_title)
 	pause_screen.toggle_music.connect(_toggle_music)
@@ -220,6 +224,8 @@ func start_new_run(seed_value: int = 0) -> void:
 	day_gold = 0
 	kills = 0
 	day_kills = 0
+	endless = false
+	_run_recorded = false
 	seeds = {"radish": 4, "pumpkin": 1, "star": 0}
 	selected_seed = 0
 	relic_ids.clear()
@@ -291,7 +297,10 @@ func day_setup() -> void:
 	sea.set_night(false)
 	_tween_ambient(Color(1, 1, 1))
 	hud.set_day(day, "白天", Color("#8fe0b0"))
-	hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
+	if endless:
+		hud.banner("无尽 · 第 %d 天" % day, Color("#f2c94c"), 0.9)
+	else:
+		hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
 	_seeds_dirty = true
 
 
@@ -321,6 +330,10 @@ func range_mult() -> float:
 
 func enemy_speed_mult() -> float:
 	return float(mods["slow"])
+
+
+func _is_boss_night(d: int) -> bool:
+	return d >= GameData.WIN_DAY and (d - GameData.WIN_DAY) % 3 == 0
 
 
 func _process(delta: float) -> void:
@@ -372,7 +385,7 @@ func start_night() -> void:
 	Audio.sfx("horn", 1.0, -4.0)
 	hud.set_day(day, "夜晚", Color("#9a8fe0"))
 	hud.banner("第 %d 夜 · 涨潮了" % day, Color("#9a8fe0"), 1.0)
-	if day == GameData.WIN_DAY:
+	if _is_boss_night(day):
 		get_tree().create_timer(1.8).timeout.connect(_spawn_boss)
 	_update_hud(true)
 
@@ -480,7 +493,7 @@ func _end_night() -> void:
 	Audio.sfx("dawn")
 	sea.set_night(false)
 	_tween_ambient(Color(1, 1, 1))
-	if day >= GameData.WIN_DAY:
+	if day >= GameData.WIN_DAY and not endless:
 		_finish_run(true)
 		return
 	var earned := day_gold
@@ -596,12 +609,36 @@ func _finish_run(victory: bool) -> void:
 	Audio.stop_music()
 	Audio.sfx("victory" if victory else "gameover", 1.0, -2.0)
 	var is_best := day > SaveGame.best_day
-	SaveGame.record_run(day, kills, run_gold)
+	if not _run_recorded:
+		if not test_mode:
+			SaveGame.record_run(day, kills, run_gold)
+		_run_recorded = true
+	else:
+		if not test_mode:
+			SaveGame.update_best(day, kills)
 	hud.visible = false
 	await get_tree().create_timer(0.7).timeout
 	if state != State.GAMEOVER and state != State.VICTORY:
 		return
-	end_screen.show_result("victory" if victory else "gameover", day, kills, run_gold, is_best)
+	end_screen.show_result("victory" if victory else "gameover", day, kills, run_gold, is_best,
+		victory and not endless)
+
+
+func _on_endless_requested() -> void:
+	if state != State.VICTORY or endless:
+		return
+	end_screen.visible = false
+	endless = true
+	day = GameData.WIN_DAY + 1
+	run_active = true
+	hud.visible = true
+	state = State.DAY
+	day_setup()
+	Audio.play_music("day")
+	_seeds_dirty = true
+	_hearts_dirty = true
+	_update_hud(true)
+	hud.banner("无尽模式 · 第 %d 天" % day, Color("#f2c94c"), 1.6)
 
 
 func _on_shop_buy(index: int) -> void:
@@ -998,7 +1035,10 @@ func _update_hud(force: bool) -> void:
 	hud.set_relic_count(relic_ids.size())
 	if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
 		var night := state == State.NIGHT
-		hud.set_day(day, "夜晚" if night else "白天", Color("#9a8fe0") if night else Color("#8fe0b0"))
+		var phase_text := "夜晚" if night else "白天"
+		if endless:
+			phase_text += " · 无尽"
+		hud.set_day(day, phase_text, Color("#9a8fe0") if night else Color("#8fe0b0"))
 		hud.set_timer(phase_time, phase_total, night)
 		if night:
 			hud.set_wave("怪物 %d 只" % (enemies.size() + night_queue.size()))
@@ -1084,7 +1124,19 @@ func setup_shot(name: String) -> void:
 		"victory":
 			start_new_run(20261029)
 			hud.visible = false
-			end_screen.show_result("victory", 7, 42, 210, true)
+			end_screen.show_result("victory", 7, 42, 210, true, true)
+		"endless":
+			start_new_run(20261029)
+			endless = true
+			day = 9
+			gold = 96
+			day_setup()
+			player.position = farm.tile_center(Vector2i(6, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(7, 4), "star", 1.0)
+			plants_at(Vector2i(8, 4), "pumpkin", 0.6)
+			plants_at(Vector2i(7, 5), "radish", 0.8)
+			_update_hud(true)
 		"pause":
 			start_new_run(20261029)
 			day = 3
@@ -1111,6 +1163,7 @@ func plants_at(t: Vector2i, kind: String, ratio: float) -> void:
 func run_selftest() -> int:
 	_test_failures = 0
 	_test_checks = 0
+	test_mode = true
 
 	start_new_run(4242)
 	_check(state == State.DAY, "run starts in DAY state")
@@ -1203,6 +1256,14 @@ func run_selftest() -> int:
 	await get_tree().create_timer(3.0).timeout
 	_check(state == State.VICTORY, "boss death wins the run")
 
+	# endless mode
+	_check(_is_boss_night(7) and _is_boss_night(10) and not _is_boss_night(8),
+		"boss night every third day after victory")
+	_on_endless_requested()
+	_check(endless, "endless mode enabled")
+	_check(state == State.DAY and day == 8, "endless starts at day 8")
+	_check(_run_recorded, "run recorded once")
+
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day
 	SaveGame.best_day = 9
@@ -1213,6 +1274,7 @@ func run_selftest() -> int:
 	SaveGame.best_day = old_best
 	SaveGame.save_data()
 
+	test_mode = false
 	print("SELFTEST ", "OK" if _test_failures == 0 else "FAILED", " ", _test_checks - _test_failures, "/", _test_checks)
 	return 0 if _test_failures == 0 else 1
 

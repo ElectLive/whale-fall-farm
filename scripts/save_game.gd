@@ -58,3 +58,10 @@ func record_run(day: int, kills: int, gold: int) -> void:
 	best_day = maxi(best_day, day)
 	best_kills = maxi(best_kills, kills)
 	save_data()
+
+
+func update_best(day: int, kills: int) -> void:
+	## Called when an endless run continues past the recorded victory.
+	best_day = maxi(best_day, day)
+	best_kills = maxi(best_kills, kills)
+	save_data()
