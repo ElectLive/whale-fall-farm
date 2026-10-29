@@ -47,6 +47,7 @@ var stage := 0
 var value := 0
 var seed_drop := 0.0
 var night_only := false
+var golden := false
 var farm: Farm
 var game: Node
 var sprite: Sprite2D
@@ -76,11 +77,29 @@ func _ready() -> void:
 	add_child(sprite)
 	glow = Sprite2D.new()
 	glow.texture = GLOW
-	glow.modulate = Color(1.0, 0.95, 0.6, 0.55 if mature else 0.0)
+	glow.modulate = _glow_color(0.55 if mature else 0.0)
 	glow.scale = Vector2(0.5, 0.5)
 	glow.position = Vector2(0, -2)
 	add_child(glow)
 	queue_redraw()
+
+
+func _glow_color(alpha: float) -> Color:
+	if golden:
+		return Color(1.0, 0.84, 0.32, alpha)
+	return Color(1.0, 0.95, 0.6, alpha)
+
+
+func make_golden() -> void:
+	if golden:
+		return
+	golden = true
+	value *= 3
+	seed_drop = minf(1.0, seed_drop + 0.15)
+	if sprite:
+		sprite.modulate = Color(1.25, 1.08, 0.55)
+	if glow:
+		glow.modulate = _glow_color(0.55)
 
 
 func water() -> void:
@@ -103,7 +122,7 @@ func _process(delta: float) -> void:
 		mature = true
 		stage = 3
 		sprite.texture = TEX[kind][stage]
-		glow.modulate = Color(1.0, 0.95, 0.6, 0.65)
+		glow.modulate = _glow_color(0.65)
 		_pop()
 		game.on_crop_matured(self)
 	else:
@@ -113,7 +132,7 @@ func _process(delta: float) -> void:
 			sprite.texture = TEX[kind][stage]
 			_pop()
 	_pulse += delta
-	glow.modulate = Color(1.0, 0.95, 0.6, 0.35 + 0.2 * sin(_pulse * 3.0))
+	glow.modulate = _glow_color(0.35 + 0.2 * sin(_pulse * 3.0))
 	queue_redraw()
 
 

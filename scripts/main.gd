@@ -952,7 +952,8 @@ func current_action() -> Dictionary:
 	if c != null:
 		if c.mature:
 			var sell := int(round(float(c.value) * float(mods["gold"])))
-			return {"type": "harvest", "crop": c, "label": "E · 收获%s（%d金）" % [GameData.CROPS[c.kind]["name"], sell], "color": Color("#f2c94c")}
+			var golden_tag := "金色" if c.golden else ""
+			return {"type": "harvest", "crop": c, "label": "E · 收获%s%s（%d金）" % [golden_tag, GameData.CROPS[c.kind]["name"], sell], "color": Color("#f2c94c")}
 		if not c.watered:
 			return {"type": "water", "crop": c, "label": "E · 给%s浇水" % GameData.CROPS[c.kind]["name"], "color": Color("#7ee3d4")}
 		if c.night_only and state != State.NIGHT:
@@ -1013,6 +1014,10 @@ func _plant(id: String, t: Vector2i) -> void:
 	farm.set_wet(t, false)
 	if is_raining():
 		c.water()
+	if rng.randf() < 0.05 + float(mods["luck"]) * 0.2:
+		c.make_golden()
+		float_text("金色作物！", c.position + Vector2(0, -18), Color("#f2c94c"), 9)
+		burst(c.position, Color("#f2c94c"), 10)
 	Audio.sfx("plant")
 	burst(c.position, Color("#8fe0b0"), 5)
 
@@ -1029,6 +1034,9 @@ func on_crop_harvested(c: Crop) -> void:
 	Audio.sfx("coin", 1.1, -4.0)
 	float_text("+%d" % value, c.position + Vector2(0, -10), Color("#f2c94c"), 10)
 	burst(c.position, Color(GameData.CROPS[c.kind]["color"]), 12)
+	if c.golden:
+		float_text("金色 ×3", c.position + Vector2(0, -22), Color("#ffe9a8"), 9)
+		burst(c.position, Color("#f2c94c"), 10)
 	if rng.randf() < float(c.seed_drop) + float(mods["luck"]) * 0.5:
 		seeds[c.kind] = int(seeds[c.kind]) + 1
 		float_text("+1 种子", c.position + Vector2(0, -20), Color("#8fe0b0"), 8)
@@ -1446,6 +1454,15 @@ func run_selftest() -> int:
 	interact()
 	var chili_crop: Crop = crops[crops.size() - 1]
 	_check(chili_crop.kind == "chili", "fifth seed slot plants chili")
+
+	# golden mutation
+	var golden_test := Crop.new()
+	golden_test.setup("radish", Vector2i(10, 3), farm, self)
+	crops_root.add_child(golden_test)
+	var base_value := golden_test.value
+	golden_test.make_golden()
+	_check(golden_test.golden and golden_test.value == base_value * 3, "golden crop triples its value")
+	golden_test.queue_free()
 
 	# night + enemy death + dawn
 	start_night()
