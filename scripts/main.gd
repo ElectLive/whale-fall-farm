@@ -232,6 +232,7 @@ func _connect_ui() -> void:
 	pause_screen.title_requested.connect(show_title)
 	pause_screen.toggle_music.connect(_toggle_music)
 	pause_screen.toggle_sfx.connect(_toggle_sfx)
+	pause_screen.toggle_vibration.connect(_toggle_vibration)
 	pause_screen.toggle_fullscreen.connect(_toggle_fullscreen_from_pause)
 	hud.seed_selected.connect(_select_seed)
 
@@ -868,10 +869,18 @@ func _toggle_fullscreen_from_pause() -> void:
 	_sync_pause_toggles()
 
 
+func _toggle_vibration() -> void:
+	SaveGame.vibration_on = not SaveGame.vibration_on
+	SaveGame.save_data()
+	if SaveGame.vibration_on:
+		vibrate(30)
+	_sync_pause_toggles()
+
+
 func _sync_pause_toggles() -> void:
 	if pause_screen.visible:
 		pause_screen.set_toggles(SaveGame.music_on, SaveGame.sfx_on,
-			DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
+			DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, SaveGame.vibration_on)
 
 
 func _toggle_pause() -> void:
@@ -889,7 +898,7 @@ func _toggle_pause() -> void:
 		var chosen: Array = []
 		for id in relic_ids:
 			chosen.append(GameData.relic_by_id(id))
-		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on, is_mobile)
+		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on, is_mobile, SaveGame.vibration_on)
 		Audio.sfx("click")
 
 
@@ -899,6 +908,9 @@ func _notification(what: int) -> void:
 			_toggle_pause()
 		elif state == State.TITLE:
 			get_tree().quit()
+	elif what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if state == State.DAY or state == State.NIGHT:
+			_toggle_pause()
 
 
 # ------------------------------------------------------------------ farming
@@ -990,6 +1002,7 @@ func _plant(id: String, t: Vector2i) -> void:
 func on_crop_harvested(c: Crop) -> void:
 	crops.erase(c)
 	farm.set_wet(c.cell, false)
+	vibrate(25)
 	var value := int(round(float(c.value) * float(mods["gold"])))
 	gold += value
 	run_gold += value
@@ -1057,6 +1070,7 @@ func on_enemy_died(e: Enemy) -> void:
 	float_text("+%d" % value, e.global_position + Vector2(0, -10), Color("#f2c94c"), 9)
 	burst(e.global_position, Color("#9a8fe0"), 12)
 	Audio.sfx("die")
+	vibrate(18)
 	if e == boss:
 		boss = null
 		boss_ending = true
@@ -1064,6 +1078,7 @@ func on_enemy_died(e: Enemy) -> void:
 		hud.banner("南瓜王倒下了", Color("#f2c94c"), 1.4)
 		Audio.sfx("explosion")
 		shake(12.0)
+		vibrate(140)
 		burst(e.global_position, Color("#f2c94c"), 26)
 		_clear_shots()
 		night_queue.clear()
@@ -1087,6 +1102,7 @@ func _on_boss_death_delay() -> void:
 
 func on_player_hurt(amount: int, source: Node) -> void:
 	shake(5.0)
+	vibrate(60)
 	hud.flash_damage()
 	Audio.sfx("hurt")
 	hud.refresh_hearts(player.hp, player.max_hp)
@@ -1101,6 +1117,11 @@ func _on_player_signal_died() -> void:
 # ------------------------------------------------------------------ helpers
 func shake(amount: float) -> void:
 	_shake = maxf(_shake, amount)
+
+
+func vibrate(ms: int) -> void:
+	if is_mobile and SaveGame.vibration_on:
+		Input.vibrate_handheld(ms)
 
 
 func _tick_shake(delta: float) -> void:

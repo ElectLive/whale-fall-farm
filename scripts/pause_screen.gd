@@ -6,11 +6,13 @@ signal resume_requested
 signal title_requested
 signal toggle_music
 signal toggle_sfx
+signal toggle_vibration
 signal toggle_fullscreen
 
 var _list: VBoxContainer
 var _music_btn: Button
 var _sfx_btn: Button
+var _vib_btn: Button
 var _fs_btn: Button
 
 
@@ -20,7 +22,8 @@ func _ready() -> void:
 	visible = false
 
 
-func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobile: bool = false) -> void:
+func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobile: bool = false,
+		vibration_on: bool = true) -> void:
 	for c in get_children():
 		c.queue_free()
 	visible = true
@@ -63,6 +66,11 @@ func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobil
 	_sfx_btn.custom_minimum_size = Vector2(150, 44)
 	_sfx_btn.pressed.connect(func() -> void: toggle_sfx.emit())
 	toggles.add_child(_sfx_btn)
+	_vib_btn = UiKit.button("震动：开", 19)
+	_vib_btn.custom_minimum_size = Vector2(150, 44)
+	_vib_btn.pressed.connect(func() -> void: toggle_vibration.emit())
+	_vib_btn.visible = mobile
+	toggles.add_child(_vib_btn)
 	_fs_btn = UiKit.button("全屏：关", 19)
 	_fs_btn.custom_minimum_size = Vector2(150, 44)
 	_fs_btn.pressed.connect(func() -> void: toggle_fullscreen.emit())
@@ -84,13 +92,15 @@ func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobil
 		Audio.sfx("click")
 		title_requested.emit())
 	row.add_child(home)
-	set_toggles(music_on, sfx_on, DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN)
+	set_toggles(music_on, sfx_on, DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN, vibration_on)
 
 
-func set_toggles(music_on: bool, sfx_on: bool, fullscreen: bool) -> void:
+func set_toggles(music_on: bool, sfx_on: bool, fullscreen: bool, vibration_on: bool = true) -> void:
 	if _music_btn:
 		_music_btn.text = "音乐：开" if music_on else "音乐：关"
 	if _sfx_btn:
 		_sfx_btn.text = "音效：开" if sfx_on else "音效：关"
+	if _vib_btn:
+		_vib_btn.text = "震动：开" if vibration_on else "震动：关"
 	if _fs_btn:
 		_fs_btn.text = "全屏：开" if fullscreen else "全屏：关"

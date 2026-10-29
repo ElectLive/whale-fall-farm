@@ -8,6 +8,7 @@ var runs := 0
 var total_gold := 0
 var music_on := true
 var sfx_on := true
+var vibration_on := true
 var PATH := ""
 
 
@@ -37,6 +38,7 @@ func load_data() -> void:
 	total_gold = int(cfg.get_value("records", "total_gold", 0))
 	music_on = bool(cfg.get_value("settings", "music_on", true))
 	sfx_on = bool(cfg.get_value("settings", "sfx_on", true))
+	vibration_on = bool(cfg.get_value("settings", "vibration_on", true))
 
 
 func save_data() -> void:
@@ -49,6 +51,7 @@ func save_data() -> void:
 	cfg.set_value("records", "total_gold", total_gold)
 	cfg.set_value("settings", "music_on", music_on)
 	cfg.set_value("settings", "sfx_on", sfx_on)
+	cfg.set_value("settings", "vibration_on", vibration_on)
 	var err := cfg.save(PATH)
 	if err != OK:
 		push_warning("whale_fall_farm: could not save records (%s, err %d)" % [PATH, err])
