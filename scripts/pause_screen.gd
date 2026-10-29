@@ -20,7 +20,7 @@ func _ready() -> void:
 	visible = false
 
 
-func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true) -> void:
+func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true, mobile: bool = false) -> void:
 	for c in get_children():
 		c.queue_free()
 	visible = true
@@ -41,7 +41,7 @@ func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true) -> vo
 	var title := UiKit.label("暂停", 46, Color("#f6e7b4"))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
-	v.add_child(UiKit.label("WASD 移动 · E 互动 · 空格 挥镰 · Esc 继续", 19, Color("#9fb0c8")))
+	v.add_child(UiKit.label("左侧摇杆移动 · 右侧镰刀攻击 · 互动键干活" if mobile else "WASD 移动 · E 互动 · 空格 挥镰 · Esc 继续", 19, Color("#9fb0c8")))
 	v.add_child(HSeparator.new())
 	v.add_child(UiKit.label("已获得的潮汐祝福", 21, UiKit.GOLD))
 	_list = VBoxContainer.new()
@@ -66,6 +66,7 @@ func show_pause(relics: Array, music_on: bool = true, sfx_on: bool = true) -> vo
 	_fs_btn = UiKit.button("全屏：关", 19)
 	_fs_btn.custom_minimum_size = Vector2(150, 44)
 	_fs_btn.pressed.connect(func() -> void: toggle_fullscreen.emit())
+	_fs_btn.visible = not mobile
 	toggles.add_child(_fs_btn)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER

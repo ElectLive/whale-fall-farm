@@ -76,7 +76,7 @@ func _build() -> void:
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v1.1.0 · 全部美术与音乐由程序生成", 18, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v1.2.0 · 全部美术与音乐由程序生成", 18, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -106,13 +106,21 @@ func _build_help() -> PanelContainer:
 	var lines := [
 		"WASD / 方向键 —— 走动",
 		"E —— 松土 / 播种 / 浇水 / 收获",
-		"1 2 3 —— 切换种子",
+		"1 2 3 4 —— 切换种子",
 		"空格 / 鼠标左键 —— 挥镰",
 		"Esc —— 暂停",
 	]
+	if OS.has_feature("mobile"):
+		lines = [
+			"左侧摇杆 —— 走动",
+			"右侧「镰」—— 挥镰（可长按）",
+			"「互动」—— 松土 / 播种 / 浇水 / 收获",
+			"轻点下方种子栏 —— 切换种子",
+			"右上「Ⅱ」—— 暂停",
+		]
 	for line in lines:
 		v.add_child(UiKit.label(line, 22, Color("#dbe6f4")))
-	v.add_child(UiKit.label("夜晚怪物会啃食作物，撑过七天。", 20, Color("#8fe0b0")))
+	v.add_child(UiKit.label("夜幕降临后怪物会啃食作物，撑过七天。", 20, Color("#8fe0b0")))
 	return p
 
 

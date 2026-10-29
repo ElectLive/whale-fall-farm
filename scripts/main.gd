@@ -39,6 +39,10 @@ var boss: Enemy = null
 var boss_ending := false
 var shop_offers: Array = []
 var shop_sold: Array[bool] = []
+var mobile: MobileControls
+var mobile_layer: CanvasLayer
+var is_mobile := false
+var touch_attack_held := false
 
 var day := 1
 var gold := 0
@@ -69,10 +73,15 @@ var _hearts_dirty := true
 
 func _ready() -> void:
 	rng.randomize()
+	is_mobile = OS.has_feature("mobile")
+	if "--touch" in OS.get_cmdline_user_args():
+		is_mobile = true
 	mods = _fresh_mods()
 	_build_world()
 	_build_ui()
 	_connect_ui()
+	if is_mobile:
+		_enable_mobile()
 	Audio.set_music_on(SaveGame.music_on)
 	Audio.set_sfx_on(SaveGame.sfx_on)
 	show_title()
@@ -224,6 +233,36 @@ func _connect_ui() -> void:
 	pause_screen.toggle_music.connect(_toggle_music)
 	pause_screen.toggle_sfx.connect(_toggle_sfx)
 	pause_screen.toggle_fullscreen.connect(_toggle_fullscreen_from_pause)
+	hud.seed_selected.connect(_select_seed)
+
+
+func _enable_mobile() -> void:
+	if mobile != null:
+		mobile.set_active(true)
+		hud.set_mobile(true)
+		return
+	is_mobile = true
+	mobile_layer = CanvasLayer.new()
+	mobile_layer.layer = 15
+	add_child(mobile_layer)
+	mobile = MobileControls.new()
+	mobile_layer.add_child(mobile)
+	mobile.attack_changed.connect(func(held: bool) -> void:
+		touch_attack_held = held)
+	mobile.attack_tap.connect(_on_mobile_attack)
+	mobile.interact_pressed.connect(func() -> void:
+		if can_control():
+			interact())
+	mobile.pause_pressed.connect(func() -> void:
+		if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
+			_toggle_pause())
+	hud.set_mobile(true)
+	mobile.set_active(false)
+
+
+func _on_mobile_attack() -> void:
+	if can_control() and player != null:
+		player.attack()
 
 
 func show_title() -> void:
@@ -237,6 +276,8 @@ func show_title() -> void:
 	pause_screen.visible = false
 	_clear_run()
 	Audio.stop_ambience()
+	if mobile:
+		mobile.set_active(false)
 	Audio.play_music("title")
 
 func start_new_run(seed_value: int = 0) -> void:
@@ -265,6 +306,8 @@ func start_new_run(seed_value: int = 0) -> void:
 	world.visible = true
 	hud.visible = true
 	hud.hide_boss()
+	if mobile:
+		mobile.set_active(true)
 	title_screen.visible = false
 	dawn_screen.visible = false
 	end_screen.visible = false
@@ -559,6 +602,8 @@ func _end_night() -> void:
 	var choices: Array = _roll_relics()
 	var offers: Array = _roll_shop()
 	hud.visible = false
+	if mobile:
+		mobile.set_active(false)
 	dawn_screen.show_dawn(day - 1, choices, earned, killed, day, offers, gold)
 
 
@@ -647,6 +692,8 @@ func _on_dawn_continue() -> void:
 		return
 	dawn_screen.visible = false
 	hud.visible = true
+	if mobile:
+		mobile.set_active(true)
 	if float(mods["dawn_heal"]) > 0 and player:
 		player.heal(int(mods["dawn_heal"]))
 	state = State.DAY
@@ -661,6 +708,9 @@ func _finish_run(victory: bool) -> void:
 		return
 	state = State.VICTORY if victory else State.GAMEOVER
 	run_active = false
+	touch_attack_held = false
+	if mobile:
+		mobile.set_active(false)
 	fireflies.emitting = false
 	Audio.stop_music()
 	Audio.stop_ambience()
@@ -689,6 +739,8 @@ func _on_endless_requested() -> void:
 	day = GameData.WIN_DAY + 1
 	run_active = true
 	hud.visible = true
+	if mobile:
+		mobile.set_active(true)
 	state = State.DAY
 	_roll_weather()
 	day_setup()
@@ -826,14 +878,27 @@ func _toggle_pause() -> void:
 	if state == State.PAUSED:
 		state = prev_state
 		pause_screen.visible = false
+		if mobile:
+			mobile.set_active(true)
 	elif state == State.DAY or state == State.NIGHT:
 		prev_state = state
 		state = State.PAUSED
+		touch_attack_held = false
+		if mobile:
+			mobile.set_active(false)
 		var chosen: Array = []
 		for id in relic_ids:
 			chosen.append(GameData.relic_by_id(id))
-		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on)
+		pause_screen.show_pause(chosen, SaveGame.music_on, SaveGame.sfx_on, is_mobile)
 		Audio.sfx("click")
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
+			_toggle_pause()
+		elif state == State.TITLE:
+			get_tree().quit()
 
 
 # ------------------------------------------------------------------ farming
@@ -1149,6 +1214,20 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(8, 4), "pumpkin", 0.5)
 			phase_time = 52.0
 			_update_hud(true)
+		"mobile":
+			start_new_run(20261029)
+			day = 3
+			gold = 52
+			_enable_mobile()
+			if mobile:
+				mobile.set_active(true)
+				mobile._update_joystick(MobileControls.JOY_CENTER + Vector2(52, 12))
+			player.position = farm.tile_center(Vector2i(5, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(6, 4), "pumpkin", 0.7)
+			plants_at(Vector2i(7, 4), "radish", 1.0)
+			phase_time = 48.0
+			_update_hud(true)
 		"night":
 			start_new_run(20261029)
 			day = 4
@@ -1377,6 +1456,21 @@ func run_selftest() -> int:
 	_check(endless, "endless mode enabled")
 	_check(state == State.DAY and day == 8, "endless starts at day 8")
 	_check(_run_recorded, "run recorded once")
+
+	# mobile controls (touch simulation)
+	_enable_mobile()
+	mobile.set_active(true)
+	_check(mobile.visible, "mobile controls can be enabled")
+	player.position = farm.tile_center(Vector2i(7, 4))
+	var px := player.position.x
+	mobile._update_joystick(MobileControls.JOY_CENTER + Vector2(62, 0))
+	for i in range(6):
+		await get_tree().physics_frame
+	_check(player.position.x > px + 1.0, "virtual joystick moves the player")
+	mobile._release_joystick()
+	player.attack_cd = 0.0
+	mobile.attack_tap.emit()
+	_check(player.attack_cd > 0.0, "touch attack swings the scythe")
 
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day

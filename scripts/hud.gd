@@ -2,6 +2,8 @@ class_name Hud
 extends Control
 ## In-game HUD: day, timer, gold, hearts, seed belt and context prompt.
 
+signal seed_selected(index: int)
+
 const HEART_FULL := preload("res://assets/generated/ui/heart_full.png")
 const HEART_EMPTY := preload("res://assets/generated/ui/heart_empty.png")
 const COIN := preload("res://assets/generated/ui/coin.png")
@@ -17,8 +19,10 @@ var gold_label: Label
 var wave_label: Label
 var prompt_label: Label
 var hearts: HBoxContainer
-var seed_panels: Array[PanelContainer] = []
+var seed_panels: Array[Button] = []
 var seed_counts: Array[Label] = []
+var _seed_keys: Array[Label] = []
+var _hint: Label
 var progress: ProgressBar
 var damage_flash: ColorRect
 var banner_label: Label
@@ -148,33 +152,51 @@ func _build() -> void:
 	sh.alignment = BoxContainer.ALIGNMENT_CENTER
 	sv.add_child(sh)
 	for i in range(GameData.CROP_ORDER.size()):
-		var slot := PanelContainer.new()
+		var slot := Button.new()
 		slot.custom_minimum_size = Vector2(120, 54)
-		slot.add_theme_stylebox_override("panel", UiKit.make_texture_style(UiKit.TEX_PANEL, 8, 8))
+		slot.focus_mode = Control.FOCUS_NONE
+		slot.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var base_style := UiKit.make_texture_style(UiKit.TEX_PANEL, 8, 8)
+		for state in ["normal", "hover", "pressed", "focus"]:
+			slot.add_theme_stylebox_override(state, base_style)
+		slot.pressed.connect(_on_seed_slot_pressed.bind(i))
 		sh.add_child(slot)
 		var hh := HBoxContainer.new()
+		hh.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		hh.offset_left = 6
+		hh.offset_top = 2
+		hh.offset_right = -4
+		hh.offset_bottom = -2
+		hh.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hh.add_theme_constant_override("separation", 3)
 		slot.add_child(hh)
 		var key := UiKit.label(str(i + 1), 16, Color("#9fb0c8"))
 		key.custom_minimum_size = Vector2(12, 0)
+		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_seed_keys.append(key)
 		hh.add_child(key)
 		var crop_id: String = GameData.CROP_ORDER[i]
 		var ic := UiKit.icon("res://assets/generated/ui/seed_%s.png" % _seed_icon_id(crop_id), 30)
+		ic.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hh.add_child(ic)
 		var vv := VBoxContainer.new()
 		vv.add_theme_constant_override("separation", -5)
+		vv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		hh.add_child(vv)
-		vv.add_child(UiKit.label(GameData.CROPS[crop_id]["name"], 15, Color("#c8d6e8")))
+		var name_label := UiKit.label(GameData.CROPS[crop_id]["name"], 15, Color("#c8d6e8"))
+		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vv.add_child(name_label)
 		var cnt := UiKit.label("×0", 20, Color("#f6e7b4"))
+		cnt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vv.add_child(cnt)
 		seed_panels.append(slot)
 		seed_counts.append(cnt)
 
-	var hint := UiKit.label("E 互动 · 空格 挥镰 · 1-4 选种 · Esc 暂停", 15, Color(0.72, 0.8, 0.9, 0.65))
-	hint.position = Vector2(910, 668)
-	hint.size = Vector2(354, 30)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	add_child(hint)
+	_hint = UiKit.label("E 互动 · 空格 挥镰 · 1-4 选种 · Esc 暂停", 15, Color(0.72, 0.8, 0.9, 0.65))
+	_hint.position = Vector2(910, 668)
+	_hint.size = Vector2(354, 30)
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	add_child(_hint)
 
 	damage_flash = ColorRect.new()
 	damage_flash.color = Color(0.8, 0.1, 0.15, 0.0)
@@ -298,7 +320,21 @@ func refresh_seeds(counts: Array, selected: int) -> void:
 	for i in range(seed_counts.size()):
 		seed_counts[i].text = "×%d" % int(counts[i]) if i < counts.size() else "×0"
 		var style := UiKit.make_texture_style(UiKit.TEX_PANEL_SEL if i == selected else UiKit.TEX_PANEL, 8, 8)
-		seed_panels[i].add_theme_stylebox_override("panel", style)
+		for state in ["normal", "hover", "pressed", "focus"]:
+			seed_panels[i].add_theme_stylebox_override(state, style)
+		seed_panels[i].modulate = Color(1.22, 1.22, 1.08) if i == selected else Color.WHITE
+
+
+func _on_seed_slot_pressed(index: int) -> void:
+	Audio.sfx("click", 1.2, -10.0)
+	seed_selected.emit(index)
+
+
+func set_mobile(on: bool) -> void:
+	if _hint:
+		_hint.visible = not on
+	for key in _seed_keys:
+		key.visible = not on
 
 
 func _seed_icon_id(crop_id: String) -> String:

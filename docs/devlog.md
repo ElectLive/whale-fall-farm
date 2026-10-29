@@ -1,5 +1,24 @@
 # 开发日志
 
+## v1.2.0 — 2026-10-29
+
+### 内容
+
+- **Android 适配**：新增 `MobileControls` 触控层（虚拟摇杆 + 镰刀长按 + 互动 + 暂停），种子栏改为可点按钮并高亮选中格。
+- 手机端隐藏键盘提示，标题/暂停说明改为触控文案，暂停菜单隐藏全屏开关。
+- 返回键改为打开/恢复暂停（`quit_on_go_back=false` + `NOTIFICATION_WM_GO_BACK_REQUEST`）。
+- Android 存档写 `user://`；Windows 便携版仍写 exe 旁边。
+- 启用 ETC2/ASTC 纹理导入，配置 Android 导出预设，产出 arm64 横屏 APK。
+- 版本 1.2.0；Windows 构建同步更新。
+
+### 验证记录
+
+- `--selftest`：50/50 PASS（新增移动控件启用、摇杆移动、触控攻击）。
+- APK 在华为 CLT-AL00（Android 9）实机安装并运行：横屏标题、开局、摇杆移动、互动松土/播种、种子栏点选、暂停/继续、返回键暂停均通过。
+- 设置持久化：关闭音乐 → 强杀 App → 重启，暂停菜单仍显示「音乐：关」。
+- APK 签名/元数据：`com.electlive.whalefallfarm`，versionName 1.2.0，versionCode 3，targetSdk 36，native-code arm64-v8a，screenOrientation=0（横屏）。
+- 实机截图保存在 `image/shots/20261029_whale_apk_01..15.png`，仓库内为 `screenshots/shot_mobile_phone.png`。
+
 ## v1.1.0 — 2026-10-29
 
 ### 内容

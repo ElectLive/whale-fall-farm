@@ -3,6 +3,23 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v1.2.0 — 2026-10-29
+
+### Added
+
+- **Android support and APK** (`WhaleFallFarm-v1.2.0-android.apk`, min SDK 24, arm64, landscape).
+- `MobileControls`: virtual joystick, hold-to-attack scythe button, interact button, pause button.
+- Seed belt slots are now tappable buttons with a highlighted selected slot.
+- Android system back button opens/resumes the pause menu instead of quitting.
+- Seed icons show touch hints on mobile; title help and pause help switch to touch instructions.
+- Android saves go to `user://`; Windows portable builds still save next to the executable.
+
+### Changed
+
+- Pause screen hides the fullscreen toggle on mobile.
+- Project version 1.2.0, Android versionCode 3.
+- Texture import enables ETC2/ASTC for Android export.
+
 ## v1.1.0 — 2026-10-29
 
 ### Added
@@ -73,7 +90,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.1.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.2.0...main
+[v1.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.2.0
 [v1.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.1.0
 [v1.0.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.0.0
 [v0.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v0.3.0

@@ -1211,6 +1211,7 @@ def main() -> None:
     save(title_art(), "bg", "title.png")
     icon = app_icon()
     save(icon, "icon.png")
+    icon.resize((192, 192), Image.NEAREST).save(OUT / "icon_192.png")
     icon.save(OUT / "icon.ico", sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
     build_preview()
     n = len(list(OUT.rglob("*.png")))

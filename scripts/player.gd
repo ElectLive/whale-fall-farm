@@ -72,19 +72,23 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 	var dir := Vector2.ZERO
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-		dir.x -= 1.0
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-		dir.x += 1.0
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
-		dir.y -= 1.0
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
-		dir.y += 1.0
+	if game.is_mobile and game.mobile != null and game.mobile.move_vector.length() > 0.01:
+		dir = game.mobile.move_vector
+	else:
+		if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
+			dir.x -= 1.0
+		if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
+			dir.x += 1.0
+		if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
+			dir.y -= 1.0
+		if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
+			dir.y += 1.0
 	moving = dir != Vector2.ZERO
 	speed = BASE_SPEED * float(game.move_mult())
 	if moving:
+		var strength := minf(1.0, dir.length())
 		dir = dir.normalized()
-		velocity = dir * speed
+		velocity = dir * speed * strength
 		if absf(dir.x) > absf(dir.y):
 			facing = Vector2.RIGHT if dir.x > 0 else Vector2.LEFT
 		else:
@@ -103,8 +107,9 @@ func _physics_process(delta: float) -> void:
 			foot_t = 0.30
 			game.burst(position + Vector2(0, 7), Color(0.82, 0.76, 0.60, 0.7), 2)
 	_animate(delta)
-	# attack input: space held or left mouse held
-	if Input.is_key_pressed(KEY_SPACE) or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	# attack input: space held, left mouse held (desktop), or the touch button
+	if Input.is_key_pressed(KEY_SPACE) or game.touch_attack_held \
+			or (not game.is_mobile and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)):
 		attack()
 
 
@@ -130,7 +135,7 @@ func attack() -> void:
 		return
 	attack_cd = 0.38 / float(game.aspd_mult())
 	var dir := facing
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	if not game.is_mobile and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		var m := get_global_mouse_position()
 		var d := m - global_position
 		if d.length() > 2.0:

@@ -113,6 +113,21 @@
 - 每次黎明从「未拥有」的祝福里随机抽 3 个；抽空后用「潮汐补给（回 3 血）」兜底。
 - 效果在 `main.gd::_apply_relic` 与 `mods` 字典中集中实现。
 
+## 移动端
+
+- 目标平台：Android 7.0+（minSdk 24），arm64，横屏。
+- 视口仍是 1280×720 / 16:9；手机超宽屏用 `keep` 居中，两侧留黑边，保证像素比例和 HUD 坐标不错位。
+- 触控层 `MobileControls`（CanvasLayer 15，低于暂停/结算层）：
+  - 左下虚拟摇杆：半径 78px，触摸区 140px，输出 0..1 模拟量；同时兼容鼠标拖动方便桌面调试。
+  - 右下「镰」圆钮：按下置 `touch_attack_held`，玩家按攻击冷却连续挥镰；松开停止。
+  - 「互动」圆钮：调用同一套上下文互动。
+  - 右上「Ⅱ」：暂停。
+- HUD 的 4 个种子格改为 Button，点选即切换，选中格加亮。
+- 手机端隐藏键盘提示；标题帮助和暂停说明切换为触控文案；暂停菜单隐藏全屏开关。
+- 返回键：项目设置 `quit_on_go_back=false`，在 `_notification(NOTIFICATION_WM_GO_BACK_REQUEST)` 里切换暂停。
+- 存档：Android 写 `user://save_data.cfg`；Windows 便携版写 exe 旁边。
+- 导出：Godot 4.7 Android 模板 + JDK 17 + build-tools 34 + platform 35，release APK 用调试证书签名。
+
 ## 技术结构
 
 - Godot 4.7 / GDScript；除 `scenes/main.tscn` 外全部节点由代码构建。

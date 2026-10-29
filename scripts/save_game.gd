@@ -19,6 +19,8 @@ func _ready() -> void:
 func _resolve_path() -> String:
 	if OS.has_feature("editor"):
 		return ProjectSettings.globalize_path("res://save_data.cfg")
+	if OS.has_feature("mobile"):
+		return "user://save_data.cfg"
 	var base := OS.get_executable_path().get_base_dir()
 	if not base.is_empty():
 		return base.path_join("save_data.cfg")
