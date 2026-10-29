@@ -837,6 +837,15 @@ func _select_seed(i: int) -> void:
 	_update_hud(true)
 
 
+func _first_stocked_seed(exclude: int) -> int:
+	for i in range(GameData.CROP_ORDER.size()):
+		if i == exclude:
+			continue
+		if int(seeds.get(GameData.CROP_ORDER[i], 0)) > 0:
+			return i
+	return -1
+
+
 func toggle_fullscreen() -> void:
 	var mode := DisplayServer.window_get_mode()
 	if mode == DisplayServer.WINDOW_MODE_FULLSCREEN:
@@ -938,7 +947,8 @@ func current_action() -> Dictionary:
 	var c := crop_at(t)
 	if c != null:
 		if c.mature:
-			return {"type": "harvest", "crop": c, "label": "E · 收获%s" % GameData.CROPS[c.kind]["name"], "color": Color("#f2c94c")}
+			var sell := int(round(float(c.value) * float(mods["gold"])))
+			return {"type": "harvest", "crop": c, "label": "E · 收获%s（%d金）" % [GameData.CROPS[c.kind]["name"], sell], "color": Color("#f2c94c")}
 		if not c.watered:
 			return {"type": "water", "crop": c, "label": "E · 给%s浇水" % GameData.CROPS[c.kind]["name"], "color": Color("#7ee3d4")}
 		if c.night_only and state != State.NIGHT:
@@ -947,7 +957,7 @@ func current_action() -> Dictionary:
 	if farm.is_tilled(t):
 		var id: String = GameData.CROP_ORDER[selected_seed]
 		if int(seeds[id]) <= 0:
-			return {"type": "no_seed", "label": "%s种子用完了" % GameData.CROPS[id]["name"], "color": Color("#e2556b")}
+			return {"type": "no_seed", "label": "%s种子用完了 · 按 1-5 切换" % GameData.CROPS[id]["name"], "color": Color("#e2556b")}
 		return {"type": "plant", "label": "E · 种下%s（剩 %d）" % [GameData.CROPS[id]["name"], int(seeds[id])], "color": Color("#8fe0b0")}
 	return {"type": "till", "label": "E · 松土", "color": Color("#d8b48a")}
 
@@ -968,6 +978,10 @@ func interact() -> void:
 				return
 			seeds[id] = int(seeds[id]) - 1
 			_plant(id, t)
+			if int(seeds[id]) <= 0:
+				var nxt := _first_stocked_seed(selected_seed)
+				if nxt >= 0:
+					selected_seed = nxt
 			_seeds_dirty = true
 		"water":
 			var c: Crop = act["crop"]
@@ -1407,6 +1421,17 @@ func run_selftest() -> int:
 	_check(frog.kind == "frog", "frog enemy spawns")
 	frog.take_damage(999, Vector2.RIGHT)
 	_check(enemies.is_empty(), "frog can be killed")
+
+	# seed auto-switch when the selected stack runs out
+	player.position = farm.tile_center(Vector2i(4, 3))
+	player.facing = Vector2.RIGHT
+	interact()
+	seeds["radish"] = 1
+	seeds["pumpkin"] = 2
+	selected_seed = 0
+	interact()
+	_check(int(seeds["radish"]) == 0, "last radish seed is planted")
+	_check(selected_seed == 1, "seed belt auto-switches to a stocked crop")
 
 	# night + enemy death + dawn
 	start_night()
