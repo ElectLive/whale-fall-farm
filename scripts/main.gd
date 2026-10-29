@@ -73,6 +73,7 @@ var enrage_done := false
 var run_active := false
 var endless := false
 var daily_mode := false
+var biome := "whale"
 var _run_recorded := false
 var test_mode := false
 var _shake := 0.0
@@ -83,11 +84,16 @@ var _hearts_dirty := true
 
 func _ready() -> void:
 	rng.randomize()
+	Engine.max_fps = 60
+	OS.low_processor_usage_mode = true
 	is_mobile = OS.has_feature("mobile")
 	if "--touch" in OS.get_cmdline_user_args():
 		is_mobile = true
 	mods = _fresh_mods()
 	_build_world()
+	if is_mobile:
+		fireflies.amount = maxi(18, fireflies.amount / 2)
+		rain_particles.amount = maxi(50, rain_particles.amount / 2)
 	_build_ui()
 	_connect_ui()
 	if is_mobile:
@@ -308,6 +314,8 @@ func show_title() -> void:
 	hud.visible = false
 	title_screen.visible = true
 	codex_screen.visible = false
+	island.modulate = Color.WHITE
+	sea.modulate = Color.WHITE
 	dawn_screen.visible = false
 	end_screen.visible = false
 	pause_screen.visible = false
@@ -363,7 +371,11 @@ func start_new_run(seed_value: int = 0) -> void:
 	shop_sold.clear()
 	if seed_value == 0:
 		seed_value = rng.randi()
+	biome = "mist" if SaveGame.runs >= 1 and (seed_value % 10) < 3 else "whale"
 	farm.setup(seed_value)
+	island.modulate = Color(0.80, 0.90, 1.0) if biome == "mist" else Color.WHITE
+	sea.modulate = Color(0.72, 0.84, 1.0) if biome == "mist" else Color.WHITE
+	fog_rect.color.a = 0.06 if biome == "mist" else 0.0
 	world.visible = true
 	hud.visible = true
 	hud.hide_boss()
@@ -384,6 +396,7 @@ func start_new_run(seed_value: int = 0) -> void:
 	pet.setup(self)
 	pet.position = player.position + Vector2(-18, 10)
 	entities.add_child(pet)
+	hud.set_pet_level(1)
 
 	state = State.DAY
 	day_setup()
@@ -463,6 +476,8 @@ func day_setup() -> void:
 			hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
 	hud.set_day(day, "白天", Color("#8fe0b0"))
 	_seeds_dirty = true
+	if biome == "mist" and day == 1:
+		hud.banner("雾港 · 作物生长 +15%，夜里多一只怪", Color("#9fc8e8"), 1.8)
 	if day >= 5:
 		_unlock("day5")
 	if endless and day >= 10:
@@ -503,7 +518,7 @@ func aspd_mult() -> float:
 
 
 func growth_mult() -> float:
-	return float(mods["growth"])
+	return float(mods["growth"]) + (0.15 if biome == "mist" else 0.0)
 
 
 func range_mult() -> float:
@@ -571,6 +586,8 @@ func start_night() -> void:
 	hud.hide_boss()
 	night_queue.clear()
 	var plan := GameData.night_plan(day)
+	if biome == "mist":
+		plan.append({"kind": "slime", "count": 1})
 	for entry in plan:
 		for i in range(int(entry["count"])):
 			night_queue.append(entry["kind"])
@@ -583,6 +600,8 @@ func start_night() -> void:
 	fog_rect.color.a = 0.0
 	lightning_rect.color.a = 0.0
 	Audio.stop_ambience()
+	if biome == "mist":
+		fog_rect.color.a = 0.06
 	fireflies.emitting = true
 	sea.set_night(true)
 	_tween_ambient(Color(0.60, 0.65, 0.88))
@@ -1210,6 +1229,8 @@ func on_crop_harvested(c: Crop) -> void:
 	if c.golden:
 		SaveGame.golden_harvested += 1
 		_unlock("golden")
+	if pet != null and is_instance_valid(pet):
+		pet.gain_xp(1)
 	var value := int(round(float(c.value) * float(mods["gold"])))
 	gold += value
 	run_gold += value
@@ -1432,6 +1453,8 @@ func _update_hud(force: bool) -> void:
 				phase_text = "白天 · 雨"
 		if endless:
 			phase_text += " · 无尽"
+		if biome == "mist":
+			phase_text = "雾港 · " + phase_text
 		hud.set_day(day, phase_text, Color("#9a8fe0") if night else Color("#8fe0b0"))
 		hud.set_timer(phase_time, phase_total, night)
 		if night:
@@ -1497,6 +1520,22 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(6, 4), "chili", 1.0)
 			plants_at(Vector2i(7, 4), "moonwheat", 0.7)
 			phase_time = 48.0
+			_update_hud(true)
+		"mist":
+			start_new_run(20261029)
+			biome = "mist"
+			day = 2
+			island.modulate = Color(0.80, 0.90, 1.0)
+			sea.modulate = Color(0.72, 0.84, 1.0)
+			gold = 41
+			day_setup()
+			fog_rect.color.a = 0.06
+			hud.banner("雾港 · 潮湿的港口", Color("#9fc8e8"), 1.6)
+			player.position = farm.tile_center(Vector2i(5, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(6, 4), "moonwheat", 1.0)
+			plants_at(Vector2i(7, 4), "chili", 0.6)
+			phase_time = 49.0
 			_update_hud(true)
 		"mobile":
 			start_new_run(20261029)
@@ -1617,6 +1656,7 @@ func run_selftest() -> int:
 	_check(farm.tiles.size() == GameData.FARM_W * GameData.FARM_H, "farm grid size")
 	_check(player != null, "player spawned")
 	_check(pet != null, "pet whale spawned")
+	_check(Engine.max_fps == 60, "fps cap is 60")
 	_check(gold == 18, "starting gold is 18")
 
 	# farming chain: till -> plant -> water -> grow -> harvest
@@ -1688,6 +1728,8 @@ func run_selftest() -> int:
 		pet.try_attack()
 		_check(pet_target.hp < pet_hp, "pet whale attacks nearby monsters")
 		pet_target.take_damage(999, Vector2.RIGHT)
+		pet.gain_xp(10)
+		_check(pet.level >= 2, "pet whale levels up from harvest xp")
 
 	# armored beetle
 	var beetle := _spawn_enemy_at("beetle", Vector2(72, 52))
@@ -1773,6 +1815,10 @@ func run_selftest() -> int:
 	_check(int(mods["night_dmg"]) == 1, "night relic adds night damage")
 	_on_relic_chosen("golden")
 	_check(is_equal_approx(float(mods["golden_chance"]), 0.1), "golden relic adds mutation chance")
+	var base_growth := growth_mult()
+	biome = "mist"
+	_check(growth_mult() > base_growth, "mist harbor boosts crop growth")
+	biome = "whale"
 	Audio.set_music_on(false)
 	_check(is_equal_approx(Audio.music_level, 0.0), "music can be muted")
 	Audio.set_music_on(true)

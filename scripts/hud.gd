@@ -23,6 +23,7 @@ var seed_panels: Array[Button] = []
 var seed_counts: Array[Label] = []
 var _seed_keys: Array[Label] = []
 var _hint: Label
+var pet_label: Label
 var progress: ProgressBar
 var damage_flash: ColorRect
 var banner_label: Label
@@ -198,6 +199,11 @@ func _build() -> void:
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 
+	pet_label = UiKit.label("小鲸鱼 Lv1", 15, Color("#7ee3d4"))
+	pet_label.position = Vector2(22, 578)
+	pet_label.size = Vector2(170, 24)
+	add_child(pet_label)
+
 	damage_flash = ColorRect.new()
 	damage_flash.color = Color(0.8, 0.1, 0.15, 0.0)
 	damage_flash.position = Vector2.ZERO
@@ -335,6 +341,11 @@ func set_mobile(on: bool) -> void:
 		_hint.visible = not on
 	for key in _seed_keys:
 		key.visible = not on
+
+
+func set_pet_level(level: int) -> void:
+	if pet_label:
+		pet_label.text = "小鲸鱼 Lv%d" % level
 
 
 func _seed_icon_id(crop_id: String) -> String:

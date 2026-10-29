@@ -14,6 +14,7 @@ var reduce_flash := false
 var auto_aim := false
 var daily_best_day := 0
 var daily_best_date := ""
+var save_version := 2
 var achievements: Array[String] = []
 var crops_harvested := 0
 var enemies_killed := 0
@@ -56,6 +57,7 @@ func load_data() -> void:
 	auto_aim = bool(cfg.get_value("settings", "auto_aim", false))
 	daily_best_day = int(cfg.get_value("records", "daily_best_day", 0))
 	daily_best_date = String(cfg.get_value("records", "daily_best_date", ""))
+	save_version = int(cfg.get_value("meta", "save_version", 1))
 	crops_harvested = int(cfg.get_value("records", "crops_harvested", 0))
 	enemies_killed = int(cfg.get_value("records", "enemies_killed", 0))
 	golden_harvested = int(cfg.get_value("records", "golden_harvested", 0))
@@ -91,6 +93,7 @@ func save_data() -> void:
 	cfg.set_value("settings", "screen_shake_on", screen_shake_on)
 	cfg.set_value("settings", "reduce_flash", reduce_flash)
 	cfg.set_value("settings", "auto_aim", auto_aim)
+	cfg.set_value("meta", "save_version", save_version)
 	cfg.set_value("records", "daily_best_day", daily_best_day)
 	cfg.set_value("records", "daily_best_date", daily_best_date)
 	cfg.set_value("records", "crops_harvested", crops_harvested)

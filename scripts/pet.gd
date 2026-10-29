@@ -71,3 +71,5 @@ func gain_xp(amount: int) -> void:
 		level += 1
 		game.float_text("小鲸鱼升级 · Lv%d" % level, position + Vector2(0, -16), Color("#7ee3d4"), 9)
 		game.burst(position, Color("#7ee3d4"), 10)
+		if game.hud:
+			game.hud.set_pet_level(level)
