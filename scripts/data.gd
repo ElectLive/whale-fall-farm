@@ -66,8 +66,13 @@ const ENEMIES := {
 	},
 }
 
-const ACHIEVEMENTS := [
-	{"id": "first_harvest", "name": "第一筐收成", "desc": "收获第一个作物"},
+const BOSS_MODS := [
+	{"id": "rage", "name": "狂暴", "desc": "移动速度 +30%"},
+	{"id": "regen", "name": "再生", "desc": "每秒回复 1 点生命"},
+	{"id": "summon", "name": "召唤", "desc": "每次多召唤一只小怪"},
+]
+
+const ACHIEVEMENTS := [	{"id": "first_harvest", "name": "第一筐收成", "desc": "收获第一个作物"},
 	{"id": "harvest_50", "name": "农场主", "desc": "累计收获 50 个作物"},
 	{"id": "kill_50", "name": "守夜人", "desc": "累计击杀 50 只怪物"},
 	{"id": "day5", "name": "潮汐幸存者", "desc": "到达第 5 天"},

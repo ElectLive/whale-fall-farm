@@ -3,6 +3,21 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v1.5.0 — 2026-10-29
+
+### Added
+
+- **Farm codex**: title-screen screen listing discovered crops, monsters and relics; discovery is saved.
+- **Lifetime stats page**: runs, best day/kills, total gold, crops harvested, enemies killed, golden harvests, achievements and codex progress.
+- **Endless boss modifiers**: from day 10 the Pumpkin King rolls 狂暴 (+30% speed), 再生 (1 HP/s) or 召唤 (extra minions), shown in the boss bar.
+- **Elite enemies**: 8% + day×0.5% chance to spawn with double HP, double gold and a larger golden sprite.
+- Codex/stats buttons on the title screen; `--shot=codex` and `--shot=stats` dev scenarios.
+
+### Changed
+
+- Boss HUD name includes its modifier; summon count is 3 for the summoner modifier.
+- Discovery hooks for planting, spawning and relic picks.
+
 ## v1.4.0 — 2026-10-29
 
 ### Added
@@ -122,7 +137,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.4.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v1.5.0...main
+[v1.5.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.5.0
 [v1.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.4.0
 [v1.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.3.0
 [v1.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.2.0

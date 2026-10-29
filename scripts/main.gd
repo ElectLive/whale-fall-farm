@@ -41,6 +41,7 @@ var crops: Array[Crop] = []
 var relic_ids: Array[String] = []
 var boss: Enemy = null
 var boss_ending := false
+var boss_mod_name := ""
 var shop_offers: Array = []
 var shop_sold: Array[bool] = []
 var mobile: MobileControls
@@ -578,10 +579,15 @@ func _spawn_boss() -> void:
 	entities.add_child(e)
 	enemies.append(e)
 	boss = e
+	boss_mod_name = ""
+	if endless and _is_boss_night(day):
+		var mod: Dictionary = GameData.BOSS_MODS[rng.randi_range(0, GameData.BOSS_MODS.size() - 1)]
+		e.apply_boss_mod(String(mod["id"]))
+		boss_mod_name = String(mod["name"])
 	if not test_mode:
 		SaveGame.discover_enemy("boss")
-	hud.show_boss(String(GameData.ENEMIES["boss"]["name"]), e.hp, e.max_hp)
-	hud.banner("腐化南瓜王苏醒了", Color("#ff9a5c"), 1.8)
+	hud.show_boss(_boss_display_name(), e.hp, e.max_hp)
+	hud.banner("%s 苏醒了" % _boss_display_name(), Color("#ff9a5c"), 1.8)
 	Audio.play_music("boss")
 	Audio.sfx("boss_roar")
 	shake(9.0)
@@ -605,6 +611,8 @@ func _spawn_enemy_at(kind: String, pos: Vector2) -> Enemy:
 	e.setup(kind, pos, self, GameData.hp_scale(day))
 	entities.add_child(e)
 	enemies.append(e)
+	if kind != "boss" and rng.randf() < 0.08 + day * 0.005:
+		e.make_elite()
 	if not test_mode:
 		SaveGame.discover_enemy(kind)
 	burst(pos, Color("#9a8fe0"), 6)
@@ -628,7 +636,8 @@ func boss_summon(b: Enemy) -> void:
 		return
 	hud.banner("南瓜王召唤了潮泥怪", Color("#9a8fe0"), 1.2)
 	Audio.sfx("horn", 1.25, -7.0)
-	for i in range(2):
+	var count := 3 if b.boss_mod == "summon" else 2
+	for i in range(count):
 		_spawn_enemy_at("slime", b.position + Vector2(rng.randf_range(-26, 26), rng.randf_range(-6, 18)))
 	burst(b.position, Color("#9a8fe0"), 12)
 
@@ -1215,8 +1224,15 @@ func on_enemy_damaged(e: Enemy, amount: int) -> void:
 	float_text("%d" % amount, e.global_position + Vector2(0, -14), Color("#ffe9a8"), 10)
 	burst(e.global_position, Color("#e2556b"), 4)
 	if e == boss:
-		hud.show_boss(String(GameData.ENEMIES["boss"]["name"]), e.hp, e.max_hp)
+		hud.show_boss(_boss_display_name(), e.hp, e.max_hp)
 	shake(1.0)
+
+
+func _boss_display_name() -> String:
+	var nm := String(GameData.ENEMIES["boss"]["name"])
+	if boss_mod_name != "":
+		nm += " · " + boss_mod_name
+	return nm
 
 
 func on_enemy_died(e: Enemy) -> void:
@@ -1620,6 +1636,17 @@ func run_selftest() -> int:
 	beetle.take_damage(999, Vector2.RIGHT)
 	_check(enemies.is_empty(), "beetle can be killed")
 
+	# elite enemy
+	var elite_test := Enemy.new()
+	elite_test.setup("slime", Vector2(80, 60), self, 1.0)
+	entities.add_child(elite_test)
+	var elite_hp := elite_test.max_hp
+	var elite_gold := elite_test.gold
+	elite_test.make_elite()
+	_check(elite_test.max_hp == elite_hp * 2 and elite_test.gold == elite_gold * 2,
+		"elite doubles hp and gold")
+	elite_test.queue_free()
+
 	# seed auto-switch when the selected stack runs out
 	player.position = farm.tile_center(Vector2i(4, 3))
 	player.facing = Vector2.RIGHT
@@ -1711,6 +1738,9 @@ func run_selftest() -> int:
 	_check(boss != null, "boss spawns")
 	_check(hud.boss_panel.visible, "boss hp bar visible")
 	if boss != null:
+		var base_boss_speed := boss.speed
+		boss.apply_boss_mod("rage")
+		_check(boss.speed > base_boss_speed, "boss rage modifier increases speed")
 		player.position = boss.position + Vector2(0, 20)
 		var boss_hp := boss.hp
 		player_attack(player, Vector2.UP)

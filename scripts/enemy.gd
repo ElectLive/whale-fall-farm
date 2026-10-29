@@ -24,6 +24,9 @@ var frame_count := 1
 var enraged := false
 var is_boss := false
 var boss_phase := 0
+var boss_mod := ""
+var regen_acc := 0.0
+var elite := false
 var shoot_cd := 2.2
 var sprite_size := 16
 var hop_clock := 0.8
@@ -153,6 +156,12 @@ func _boss_behaviour(delta: float) -> Vector2:
 	var desired := Vector2.ZERO
 	if to_player.length() > 24.0:
 		desired = to_player.normalized() * speed
+	if boss_mod == "regen" and hp < max_hp:
+		regen_acc += delta
+		if regen_acc >= 1.0:
+			regen_acc -= 1.0
+			hp = mini(max_hp, hp + 1)
+			queue_redraw()
 	shoot_cd -= delta
 	if shoot_cd <= 0.0:
 		shoot_cd = 3.2
@@ -232,6 +241,32 @@ func enrage() -> void:
 	enraged = true
 	speed *= 1.25
 	sprite.modulate = Color(1.0, 0.72, 0.72)
+	queue_redraw()
+
+
+func apply_boss_mod(id: String) -> void:
+	boss_mod = id
+	match id:
+		"rage":
+			speed *= 1.3
+			sprite.modulate = Color(1.25, 0.72, 0.65)
+		"regen":
+			sprite.modulate = Color(0.72, 1.2, 0.85)
+		"summon":
+			sprite.modulate = Color(1.1, 0.8, 1.25)
+
+
+func make_elite() -> void:
+	if elite or is_boss:
+		return
+	elite = true
+	max_hp *= 2
+	hp = max_hp
+	gold *= 2
+	speed *= 1.1
+	if sprite:
+		sprite.scale *= 1.22
+		sprite.modulate = Color(1.25, 1.02, 0.55)
 	queue_redraw()
 
 
