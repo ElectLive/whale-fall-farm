@@ -134,8 +134,8 @@ func _build() -> void:
 
 	# seed belt + prompt
 	var seed_panel := UiKit.panel_container(8)
-	seed_panel.position = Vector2(400, 608)
-	seed_panel.size = Vector2(480, 100)
+	seed_panel.position = Vector2(380, 608)
+	seed_panel.size = Vector2(520, 100)
 	add_child(seed_panel)
 	var sv := VBoxContainer.new()
 	sv.add_theme_constant_override("separation", 2)
@@ -147,32 +147,32 @@ func _build() -> void:
 	sh.add_theme_constant_override("separation", 6)
 	sh.alignment = BoxContainer.ALIGNMENT_CENTER
 	sv.add_child(sh)
-	for i in range(3):
+	for i in range(GameData.CROP_ORDER.size()):
 		var slot := PanelContainer.new()
-		slot.custom_minimum_size = Vector2(146, 54)
+		slot.custom_minimum_size = Vector2(120, 54)
 		slot.add_theme_stylebox_override("panel", UiKit.make_texture_style(UiKit.TEX_PANEL, 8, 8))
 		sh.add_child(slot)
 		var hh := HBoxContainer.new()
-		hh.add_theme_constant_override("separation", 4)
+		hh.add_theme_constant_override("separation", 3)
 		slot.add_child(hh)
-		var key := UiKit.label(str(i + 1), 18, Color("#9fb0c8"))
-		key.custom_minimum_size = Vector2(14, 0)
+		var key := UiKit.label(str(i + 1), 16, Color("#9fb0c8"))
+		key.custom_minimum_size = Vector2(12, 0)
 		hh.add_child(key)
 		var crop_id: String = GameData.CROP_ORDER[i]
-		var ic := UiKit.icon("res://assets/generated/ui/seed_%s.png" % crop_id, 34)
+		var ic := UiKit.icon("res://assets/generated/ui/seed_%s.png" % _seed_icon_id(crop_id), 30)
 		hh.add_child(ic)
 		var vv := VBoxContainer.new()
-		vv.add_theme_constant_override("separation", -4)
+		vv.add_theme_constant_override("separation", -5)
 		hh.add_child(vv)
-		vv.add_child(UiKit.label(GameData.CROPS[crop_id]["name"], 16, Color("#c8d6e8")))
-		var cnt := UiKit.label("×0", 22, Color("#f6e7b4"))
+		vv.add_child(UiKit.label(GameData.CROPS[crop_id]["name"], 15, Color("#c8d6e8")))
+		var cnt := UiKit.label("×0", 20, Color("#f6e7b4"))
 		vv.add_child(cnt)
 		seed_panels.append(slot)
 		seed_counts.append(cnt)
 
-	var hint := UiKit.label("E 互动 · 空格 挥镰 · 1/2/3 选种 · Esc 暂停", 16, Color(0.72, 0.8, 0.9, 0.65))
-	hint.position = Vector2(900, 668)
-	hint.size = Vector2(364, 30)
+	var hint := UiKit.label("E 互动 · 空格 挥镰 · 1-4 选种 · Esc 暂停", 15, Color(0.72, 0.8, 0.9, 0.65))
+	hint.position = Vector2(910, 668)
+	hint.size = Vector2(354, 30)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(hint)
 
@@ -295,10 +295,16 @@ func _process(delta: float) -> void:
 
 
 func refresh_seeds(counts: Array, selected: int) -> void:
-	for i in range(3):
-		seed_counts[i].text = "×%d" % int(counts[i])
+	for i in range(seed_counts.size()):
+		seed_counts[i].text = "×%d" % int(counts[i]) if i < counts.size() else "×0"
 		var style := UiKit.make_texture_style(UiKit.TEX_PANEL_SEL if i == selected else UiKit.TEX_PANEL, 8, 8)
 		seed_panels[i].add_theme_stylebox_override("panel", style)
+
+
+func _seed_icon_id(crop_id: String) -> String:
+	if crop_id == "moonwheat":
+		return "moon"
+	return crop_id
 
 
 func flash_damage() -> void:

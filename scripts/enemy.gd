@@ -25,6 +25,8 @@ var is_boss := false
 var boss_phase := 0
 var shoot_cd := 2.2
 var sprite_size := 16
+var hop_clock := 0.8
+var leap_time := 0.0
 
 
 func setup(enemy_kind: String, at: Vector2, game_ref: Node, hp_mult: float = 1.0) -> void:
@@ -97,6 +99,8 @@ func _physics_process(delta: float) -> void:
 	var desired := Vector2.ZERO
 	if is_boss:
 		desired = _boss_behaviour(delta)
+	elif kind == "frog":
+		desired = _frog_behaviour(delta)
 	elif kind == "crow":
 		desired = _crow_behaviour(delta)
 	else:
@@ -124,6 +128,22 @@ func _physics_process(delta: float) -> void:
 	if dist < reach and atk_cd <= 0.0:
 		atk_cd = 1.2 if is_boss else 1.0
 		player.hurt(damage, self)
+
+
+func _frog_behaviour(delta: float) -> Vector2:
+	if leap_time > 0.0:
+		leap_time -= delta
+		sprite.frame = 1
+		var d: Vector2 = game.player.global_position - global_position
+		if d.length() < 4.0:
+			return Vector2.ZERO
+		return d.normalized() * speed
+	sprite.frame = 0
+	hop_clock -= delta
+	if hop_clock <= 0.0:
+		hop_clock = 1.25
+		leap_time = 0.42
+	return Vector2.ZERO
 
 
 func _boss_behaviour(delta: float) -> Vector2:

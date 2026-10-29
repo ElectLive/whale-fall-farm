@@ -76,7 +76,7 @@ func _build() -> void:
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v1.0.0 · 全部美术与音乐由程序生成", 18, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v1.1.0 · 全部美术与音乐由程序生成", 18, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT

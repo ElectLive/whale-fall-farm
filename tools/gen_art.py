@@ -492,6 +492,55 @@ def boss_frame(step: int) -> Image.Image:
     return im
 
 
+def frog_frame(step: int) -> Image.Image:
+    im, d = new(16, 16)
+    body = C["vine"]
+    dark = C["vine2"]
+    belly = (196, 214, 142, 255)
+    if step == 0:
+        disc(d, 8, 14, 5, 1.5, (20, 26, 36, 90))
+        disc(d, 8, 11, 5, 3.5, C["ink"])
+        disc(d, 8, 10.5, 4, 3, body)
+        disc(d, 8, 12, 3, 1.5, belly)
+        for x in (4, 11):
+            disc(d, x, 6.5, 2, 2, C["ink"])
+            disc(d, x, 6.2, 1.4, 1.4, body)
+            px(d, x, 6, C["ink"])
+        box(d, 5, 13, 6, 15, dark)
+        box(d, 10, 13, 11, 15, dark)
+        px(d, 7, 11, C["ink2"])
+        px(d, 9, 11, C["ink2"])
+    else:
+        disc(d, 8, 15, 5, 1, (20, 26, 36, 80))
+        disc(d, 8, 10, 5.5, 3, C["ink"])
+        disc(d, 8, 9.5, 4.5, 2.5, body)
+        for x in (3, 12):
+            d.polygon([(x, 7), (x - 2, 4), (x + 1, 5)], fill=dark)
+            disc(d, x, 5.5, 1.8, 1.8, C["ink"])
+            disc(d, x, 5.2, 1.2, 1.2, body)
+            px(d, x, 5, C["ink"])
+        d.polygon([(3, 12), (0, 14), (4, 14)], fill=dark)
+        d.polygon([(13, 12), (16, 14), (12, 14)], fill=dark)
+        px(d, 6, 10, C["ink2"])
+        px(d, 10, 10, C["ink2"])
+    return im
+
+
+def frog_sheet() -> Image.Image:
+    sheet, _ = new(32, 16)
+    for i in range(2):
+        sheet.paste(frog_frame(i), (i * 16, 0))
+    return sheet
+
+
+def rain_drop() -> Image.Image:
+    im, d = new(2, 8)
+    for y in range(8):
+        a = int(60 + 150 * (y / 7.0))
+        box(d, 0, y, 1, y, (170, 214, 232, a))
+    return im
+
+
 def boss_sheet() -> Image.Image:
     sheet, _ = new(64, 32)
     for i in range(2):
@@ -613,6 +662,48 @@ def crop_star(stage: int) -> Image.Image:
     return im
 
 
+def crop_moonwheat(stage: int) -> Image.Image:
+    stem = (132, 172, 154, 255)
+    leaf = (164, 208, 182, 255)
+    grain = (232, 226, 170, 255)
+    grain2 = (196, 204, 152, 255)
+    pale = (214, 236, 255, 255)
+    im, d = new(16, 16)
+    if stage == 0:
+        px(d, 7, 13, stem)
+        px(d, 8, 12, stem)
+        px(d, 6, 12, leaf)
+        px(d, 9, 13, leaf)
+    elif stage == 1:
+        for x, top in ((5, 9), (8, 7), (11, 9)):
+            box(d, x, top, x, 14, stem)
+            px(d, x - 1, top + 1, leaf)
+            px(d, x + 1, top + 1, leaf)
+            px(d, x - 1, top + 3, leaf)
+    elif stage == 2:
+        for x, top in ((4, 7), (8, 5), (12, 7)):
+            box(d, x, top, x, 14, stem)
+            px(d, x - 1, top + 1, leaf)
+            px(d, x + 1, top + 2, leaf)
+            disc(d, x, top - 1, 1.5, 2, grain2)
+            px(d, x, top - 2, grain)
+        px(d, 13, 3, pale)
+    else:
+        for x, top in ((4, 4), (8, 2), (12, 4)):
+            box(d, x, top, x, 14, stem)
+            px(d, x - 1, top + 2, leaf)
+            px(d, x + 1, top + 3, leaf)
+            px(d, x - 1, top + 6, leaf)
+            disc(d, x, top - 1, 1.5, 3, grain2)
+            disc(d, x, top - 2, 1, 2, grain)
+            px(d, x, top - 4, grain)
+            px(d, x, top + 1, grain2)
+        # little crescent
+        disc(d, 13, 3, 2.5, 2.5, pale)
+        disc(d, 12, 2, 2.0, 2.0, (0, 0, 0, 0))
+    return im
+
+
 def crop_dead() -> Image.Image:
     im, d = new(16, 16)
     box(d, 7, 10, 7, 14, (120, 100, 60, 255))
@@ -703,7 +794,7 @@ def seed_icon(kind: str) -> Image.Image:
     paper = (226, 208, 168, 255)
     d.polygon([(4, 4), (12, 4), (12, 12), (8, 14), (4, 12)], fill=paper)
     d.line([(4, 4), (12, 4)], fill=(168, 142, 100, 255))
-    col = {"radish": C["red"], "pumpkin": C["orange"], "star": C["cyan"]}[kind]
+    col = {"radish": C["red"], "pumpkin": C["orange"], "star": C["cyan"], "moon": C["cyan"]}[kind]
     if kind == "radish":
         disc(d, 8, 8, 2.5, 2, col)
         px(d, 8, 5, C["green"])
@@ -713,6 +804,13 @@ def seed_icon(kind: str) -> Image.Image:
         px(d, 8, 5, C["green2"])
         px(d, 7, 8, C["orange2"])
         px(d, 9, 8, C["orange2"])
+    elif kind == "moon":
+        disc(d, 8, 8, 3, 3, (214, 236, 255, 255))
+        disc(d, 7, 7, 2.5, 2.5, paper)
+        px(d, 8, 4, C["green2"])
+        px(d, 7, 5, C["green"])
+        px(d, 9, 5, C["green"])
+        px(d, 10, 7, C["gold"])
     else:
         disc(d, 8, 8, 2, 2, C["gold"])
         for dx, dy in ((0, -3), (3, 0), (0, 3), (-3, 0)):
@@ -1078,12 +1176,14 @@ def main() -> None:
     save(crow_sheet(), "chars", "crow.png")
     save(vine_sheet(), "chars", "vine.png")
     save(boss_sheet(), "chars", "boss_pumpkin.png")
+    save(frog_sheet(), "chars", "frog.png")
     save(shadow(), "chars", "shadow.png")
     # crops
     for i in range(4):
         save(crop_radish(i), "crops", f"radish_{i}.png")
         save(crop_pumpkin(i), "crops", f"pumpkin_{i}.png")
         save(crop_star(i), "crops", f"star_{i}.png")
+        save(crop_moonwheat(i), "crops", f"moonwheat_{i}.png")
     save(crop_dead(), "crops", "dead.png")
     # ui
     save(panel(False), "ui", "panel.png")
@@ -1094,7 +1194,7 @@ def main() -> None:
     save(coin(), "ui", "coin.png")
     save(sun_icon(), "ui", "sun.png")
     save(moon_icon(), "ui", "moon.png")
-    for k in ("radish", "pumpkin", "star"):
+    for k in ("radish", "pumpkin", "star", "moon"):
         save(seed_icon(k), "ui", f"seed_{k}.png")
     for k in ("hoe", "can", "scythe", "clock"):
         save(tool_icon(k), "ui", f"icon_{k}.png")
@@ -1107,6 +1207,7 @@ def main() -> None:
     save(slash(), "fx", "slash.png")
     save(leaf(), "fx", "leaf.png")
     save(seed_shot(), "fx", "seed_shot.png")
+    save(rain_drop(), "fx", "rain.png")
     save(title_art(), "bg", "title.png")
     icon = app_icon()
     save(icon, "icon.png")

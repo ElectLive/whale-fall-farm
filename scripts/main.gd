@@ -20,6 +20,7 @@ var crops_root: Node2D
 var entities: Node2D
 var fx: Node2D
 var fireflies: CPUParticles2D
+var rain_particles: CPUParticles2D
 var camera: Camera2D
 var ambient: CanvasModulate
 var ui_layer: CanvasLayer
@@ -45,8 +46,9 @@ var run_gold := 0
 var day_gold := 0
 var kills := 0
 var day_kills := 0
-var seeds := {"radish": 4, "pumpkin": 1, "star": 0}
+var seeds := {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0}
 var selected_seed := 0
+var rainy := false
 var mods := {}
 var rng := RandomNumberGenerator.new()
 
@@ -135,6 +137,28 @@ func _build_world() -> void:
 	fireflies.z_index = 1500
 	world.add_child(fireflies)
 
+	rain_particles = CPUParticles2D.new()
+	rain_particles.name = "Rain"
+	rain_particles.texture = preload("res://assets/generated/fx/rain.png")
+	rain_particles.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	rain_particles.amount = 160
+	rain_particles.lifetime = 1.15
+	rain_particles.preprocess = 1.0
+	rain_particles.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	rain_particles.emission_rect_extents = Vector2(152, 82)
+	rain_particles.position = Vector2(120, 40)
+	rain_particles.direction = Vector2.DOWN
+	rain_particles.spread = 6.0
+	rain_particles.initial_velocity_min = 145.0
+	rain_particles.initial_velocity_max = 195.0
+	rain_particles.gravity = Vector2(0, 90)
+	rain_particles.scale_amount_min = 0.8
+	rain_particles.scale_amount_max = 1.25
+	rain_particles.color = Color(0.72, 0.86, 0.95, 0.55)
+	rain_particles.emitting = false
+	rain_particles.z_index = 2600
+	world.add_child(rain_particles)
+
 	camera = Camera2D.new()
 	camera.position = Vector2(120, 64)
 	camera.zoom = Vector2(4, 4)
@@ -212,6 +236,7 @@ func show_title() -> void:
 	end_screen.visible = false
 	pause_screen.visible = false
 	_clear_run()
+	Audio.stop_ambience()
 	Audio.play_music("title")
 
 func start_new_run(seed_value: int = 0) -> void:
@@ -226,8 +251,9 @@ func start_new_run(seed_value: int = 0) -> void:
 	day_kills = 0
 	endless = false
 	_run_recorded = false
-	seeds = {"radish": 4, "pumpkin": 1, "star": 0}
+	seeds = {"radish": 4, "pumpkin": 1, "star": 0, "moonwheat": 0}
 	selected_seed = 0
+	rainy = false
 	relic_ids.clear()
 	mods = _fresh_mods()
 	boss = null
@@ -295,13 +321,28 @@ func day_setup() -> void:
 	day_kills = 0
 	fireflies.emitting = false
 	sea.set_night(false)
-	_tween_ambient(Color(1, 1, 1))
-	hud.set_day(day, "白天", Color("#8fe0b0"))
-	if endless:
-		hud.banner("无尽 · 第 %d 天" % day, Color("#f2c94c"), 0.9)
+	if rainy:
+		for c in crops:
+			if is_instance_valid(c) and not c.mature:
+				c.water()
+		rain_particles.emitting = true
+		Audio.play_ambience("rain")
+		_tween_ambient(Color(0.84, 0.88, 0.97))
+		hud.banner("第 %d 天 · 雨天" % day, Color("#8fd3d6"), 1.0)
 	else:
-		hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
+		rain_particles.emitting = false
+		Audio.stop_ambience()
+		_tween_ambient(Color(1, 1, 1))
+		if endless:
+			hud.banner("无尽 · 第 %d 天" % day, Color("#f2c94c"), 0.9)
+		else:
+			hud.banner("第 %d 天 · 天亮" % day, Color("#f6e7b4"), 0.9)
+	hud.set_day(day, "白天", Color("#8fe0b0"))
 	_seeds_dirty = true
+
+
+func _roll_weather() -> void:
+	rainy = day > 1 and rng.randf() < 0.30
 
 
 # ------------------------------------------------------------------ state flow
@@ -330,6 +371,14 @@ func range_mult() -> float:
 
 func enemy_speed_mult() -> float:
 	return float(mods["slow"])
+
+
+func is_night_phase() -> bool:
+	return state == State.NIGHT
+
+
+func is_raining() -> bool:
+	return rainy and state == State.DAY
 
 
 func _is_boss_night(d: int) -> bool:
@@ -378,6 +427,9 @@ func start_night() -> void:
 			night_queue.append(entry["kind"])
 	night_queue.shuffle()
 	spawn_timer = 1.1
+	rainy = false
+	rain_particles.emitting = false
+	Audio.stop_ambience()
 	fireflies.emitting = true
 	sea.set_night(true)
 	_tween_ambient(Color(0.60, 0.65, 0.88))
@@ -499,6 +551,9 @@ func _end_night() -> void:
 	var earned := day_gold
 	var killed := day_kills
 	day += 1
+	rainy = false
+	rain_particles.emitting = false
+	Audio.stop_ambience()
 	day_setup()
 	state = State.DAWN
 	var choices: Array = _roll_relics()
@@ -595,6 +650,7 @@ func _on_dawn_continue() -> void:
 	if float(mods["dawn_heal"]) > 0 and player:
 		player.heal(int(mods["dawn_heal"]))
 	state = State.DAY
+	_roll_weather()
 	day_setup()
 	Audio.play_music("day")
 	_update_hud(true)
@@ -607,6 +663,7 @@ func _finish_run(victory: bool) -> void:
 	run_active = false
 	fireflies.emitting = false
 	Audio.stop_music()
+	Audio.stop_ambience()
 	Audio.sfx("victory" if victory else "gameover", 1.0, -2.0)
 	var is_best := day > SaveGame.best_day
 	if not _run_recorded:
@@ -633,6 +690,7 @@ func _on_endless_requested() -> void:
 	run_active = true
 	hud.visible = true
 	state = State.DAY
+	_roll_weather()
 	day_setup()
 	Audio.play_music("day")
 	_seeds_dirty = true
@@ -662,6 +720,8 @@ func _on_shop_buy(index: int) -> void:
 			seeds["pumpkin"] = int(seeds["pumpkin"]) + 2
 		"seed_star":
 			seeds["star"] = int(seeds["star"]) + 1
+		"seed_moon":
+			seeds["moonwheat"] = int(seeds["moonwheat"]) + 1
 		"heal":
 			if player:
 				player.heal(2)
@@ -709,6 +769,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_select_seed(1)
 		KEY_3:
 			_select_seed(2)
+		KEY_4:
+			_select_seed(3)
 		KEY_F:
 			toggle_fullscreen()
 
@@ -802,6 +864,8 @@ func current_action() -> Dictionary:
 			return {"type": "harvest", "crop": c, "label": "E · 收获%s" % GameData.CROPS[c.kind]["name"], "color": Color("#f2c94c")}
 		if not c.watered:
 			return {"type": "water", "crop": c, "label": "E · 给%s浇水" % GameData.CROPS[c.kind]["name"], "color": Color("#7ee3d4")}
+		if c.night_only and state != State.NIGHT:
+			return {"type": "wait", "crop": c, "label": "%s 在等夜晚…" % GameData.CROPS[c.kind]["name"], "color": Color("#9a8fe0")}
 		return {"type": "wait", "crop": c, "label": "%s 正在生长…" % GameData.CROPS[c.kind]["name"], "color": Color(0.7, 0.8, 0.9, 0.75)}
 	if farm.is_tilled(t):
 		var id: String = GameData.CROP_ORDER[selected_seed]
@@ -852,6 +916,8 @@ func _plant(id: String, t: Vector2i) -> void:
 	crops_root.add_child(c)
 	crops.append(c)
 	farm.set_wet(t, false)
+	if is_raining():
+		c.water()
 	Audio.sfx("plant")
 	burst(c.position, Color("#8fe0b0"), 5)
 
@@ -907,7 +973,6 @@ func player_attack(p: Player, dir: Vector2) -> void:
 		Audio.sfx("hit")
 		shake(2.0)
 
-
 func on_enemy_damaged(e: Enemy, amount: int) -> void:
 	float_text("%d" % amount, e.global_position + Vector2(0, -14), Color("#ffe9a8"), 10)
 	burst(e.global_position, Color("#e2556b"), 4)
@@ -942,7 +1007,7 @@ func on_enemy_died(e: Enemy) -> void:
 		player.heal(1)
 		float_text("+1", player.position + Vector2(0, -22), Color("#8fe0b0"), 9)
 	if rng.randf() < 0.16 + float(mods["luck"]):
-		var pick: String = GameData.CROP_ORDER[rng.randi_range(0, 2)]
+		var pick: String = GameData.CROP_ORDER[rng.randi_range(0, GameData.CROP_ORDER.size() - 1)]
 		seeds[pick] = int(seeds[pick]) + 1
 		_seeds_dirty = true
 	if rng.randf() < 0.07 and player:
@@ -1029,13 +1094,18 @@ func _update_hud(force: bool) -> void:
 			hud.refresh_hearts(player.hp, player.max_hp)
 			_hearts_dirty = false
 	if _seeds_dirty or force:
-		hud.refresh_seeds([seeds["radish"], seeds["pumpkin"], seeds["star"]], selected_seed)
+		var counts: Array = []
+		for id in GameData.CROP_ORDER:
+			counts.append(int(seeds.get(id, 0)))
+		hud.refresh_seeds(counts, selected_seed)
 		_seeds_dirty = false
 	hud.set_gold(gold)
 	hud.set_relic_count(relic_ids.size())
 	if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
 		var night := state == State.NIGHT
 		var phase_text := "夜晚" if night else "白天"
+		if not night and rainy:
+			phase_text = "白天 · 雨"
 		if endless:
 			phase_text += " · 无尽"
 		hud.set_day(day, phase_text, Color("#9a8fe0") if night else Color("#8fe0b0"))
@@ -1062,8 +1132,22 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(6, 4), "pumpkin", 0.7)
 			plants_at(Vector2i(7, 4), "radish", 1.0)
 			plants_at(Vector2i(8, 4), "star", 0.5)
+			plants_at(Vector2i(9, 4), "moonwheat", 0.65)
 			plants_at(Vector2i(6, 5), "radish", 0.35)
 			phase_time = 46.0
+			_update_hud(true)
+		"rain":
+			start_new_run(20261029)
+			day = 4
+			rainy = true
+			gold = 67
+			day_setup()
+			player.position = farm.tile_center(Vector2i(5, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(6, 4), "radish", 1.0)
+			plants_at(Vector2i(7, 4), "moonwheat", 0.7)
+			plants_at(Vector2i(8, 4), "pumpkin", 0.5)
+			phase_time = 52.0
 			_update_hud(true)
 		"night":
 			start_new_run(20261029)
@@ -1073,9 +1157,9 @@ func setup_shot(name: String) -> void:
 			player.position = farm.tile_center(Vector2i(7, 4))
 			player.facing = Vector2.DOWN
 			player.invuln = 99.0
-			var spots := [Vector2(52, 32), Vector2(188, 40), Vector2(60, 120), Vector2(184, 118)]
-			for i in range(4):
-				var e := _spawn_enemy(["slime", "crow", "vine", "slime"][i])
+			var spots := [Vector2(52, 32), Vector2(188, 40), Vector2(60, 120), Vector2(184, 118), Vector2(120, 120)]
+			for i in range(5):
+				var e := _spawn_enemy(["slime", "crow", "vine", "slime", "frog"][i])
 				e.position = spots[i]
 			_update_hud(true)
 		"dawn":
@@ -1193,6 +1277,36 @@ func run_selftest() -> int:
 	interact()
 	_check(crops.size() == count_before - 1, "harvest removes crop")
 	_check(gold > gold_before, "harvest pays gold")
+
+	# moonwheat only grows at night
+	seeds["moonwheat"] = 2
+	selected_seed = 3
+	interact()
+	_check(crops.size() == 1 and crops[0].kind == "moonwheat", "fourth seed slot plants moonwheat")
+	var moon: Crop = crops[0]
+	interact()
+	_check(moon.watered, "moonwheat can be watered in the day")
+	state = State.DAY
+	moon._process(1.0)
+	_check(moon.growth == 0.0, "moonwheat waits during the day")
+	state = State.NIGHT
+	moon._process(1.0)
+	_check(moon.growth > 0.0, "moonwheat grows at night")
+	state = State.DAY
+
+	# rain auto-waters newly planted crops
+	rainy = true
+	farm.till(Vector2i(6, 3))
+	_plant("radish", Vector2i(6, 3))
+	var rain_crop: Crop = crops[crops.size() - 1]
+	_check(rain_crop.watered, "rain waters newly planted crops")
+	rainy = false
+
+	# frog enemy
+	var frog := _spawn_enemy_at("frog", Vector2(52, 52))
+	_check(frog.kind == "frog", "frog enemy spawns")
+	frog.take_damage(999, Vector2.RIGHT)
+	_check(enemies.is_empty(), "frog can be killed")
 
 	# night + enemy death + dawn
 	start_night()

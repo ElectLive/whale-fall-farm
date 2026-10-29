@@ -371,6 +371,20 @@ def main() -> None:
     sfx("seed.wav", seed)
     sfx("victory.wav", victory_sting)
     sfx("gameover.wav", gameover_sting)
+
+    # seamless-ish rain ambience bed
+    dur = 8.0
+    rain = noise(dur, 0.20, 0.22, seed=91)
+    rng = np.random.default_rng(92)
+    for _ in range(40):
+        t = rng.uniform(0, dur - 0.2)
+        f = rng.uniform(1200, 2600)
+        drop = sine(f, 0.08, 0.05) * np.exp(-np.linspace(0, 9, int(0.08 * SR)))
+        place(rain, t, drop)
+    n = int(0.25 * SR)
+    rain[:n] *= np.linspace(0, 1, n)
+    rain[-n:] *= np.linspace(1, 0, n)
+    save_wav("rain_loop.wav", rain, 0.35)
     total = sum(p.stat().st_size for p in OUT.glob("*.wav"))
     print(f"audio -> {OUT} ({total/1048576:.1f} MB)")
 

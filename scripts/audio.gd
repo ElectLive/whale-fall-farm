@@ -28,6 +28,7 @@ const SFX := {
 }
 
 var music_player: AudioStreamPlayer
+var ambience_player: AudioStreamPlayer
 var _sfx_pool: Array[AudioStreamPlayer] = []
 var _sfx_index := 0
 var _cache := {}
@@ -43,6 +44,10 @@ func _ready() -> void:
 	music_player = AudioStreamPlayer.new()
 	music_player.bus = "Master"
 	add_child(music_player)
+	ambience_player = AudioStreamPlayer.new()
+	ambience_player.bus = "Master"
+	ambience_player.volume_db = -19.0
+	add_child(ambience_player)
 	for i in range(10):
 		var p := AudioStreamPlayer.new()
 		p.bus = "Master"
@@ -94,6 +99,24 @@ func _music_volume_db() -> float:
 func stop_music() -> void:
 	music_player.stop()
 	_current_track = ""
+
+
+func play_ambience(name: String) -> void:
+	var path := "res://assets/generated/audio/rain_loop.wav" if name == "rain" else ""
+	if path == "" or ambience_player.playing:
+		return
+	var stream := _stream(path)
+	if stream is AudioStreamWAV:
+		var wav := stream as AudioStreamWAV
+		wav.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		wav.loop_begin = 0
+		wav.loop_end = int(wav.get_length() * wav.mix_rate)
+	ambience_player.stream = stream
+	ambience_player.play()
+
+
+func stop_ambience() -> void:
+	ambience_player.stop()
 
 
 func sfx(name: String, pitch: float = 1.0, volume_db: float = 0.0) -> void:

@@ -22,6 +22,12 @@ const TEX := {
 		preload("res://assets/generated/crops/star_2.png"),
 		preload("res://assets/generated/crops/star_3.png"),
 	],
+	"moonwheat": [
+		preload("res://assets/generated/crops/moonwheat_0.png"),
+		preload("res://assets/generated/crops/moonwheat_1.png"),
+		preload("res://assets/generated/crops/moonwheat_2.png"),
+		preload("res://assets/generated/crops/moonwheat_3.png"),
+	],
 }
 const GLOW := preload("res://assets/generated/fx/glow.png")
 
@@ -34,6 +40,7 @@ var mature := false
 var stage := 0
 var value := 0
 var seed_drop := 0.0
+var night_only := false
 var farm: Farm
 var game: Node
 var sprite: Sprite2D
@@ -50,6 +57,7 @@ func setup(crop_kind: String, at: Vector2i, farm_ref: Farm, game_ref: Node) -> v
 	grow_time = float(info["grow"])
 	value = int(info["value"])
 	seed_drop = float(info["seed_drop"])
+	night_only = bool(info.get("night_only", false))
 	position = farm.tile_center(cell)
 	z_index = int(position.y)
 
@@ -79,6 +87,9 @@ func water() -> void:
 
 func _process(delta: float) -> void:
 	if not watered or mature:
+		return
+	if night_only and not bool(game.is_night_phase()):
+		queue_redraw()
 		return
 	growth += delta * float(game.growth_mult())
 	if growth >= grow_time:
