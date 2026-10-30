@@ -1046,7 +1046,15 @@ func _cycle_seed(delta: int) -> void:
 	if not can_control():
 		return
 	var n := GameData.CROP_ORDER.size()
-	selected_seed = (selected_seed + delta + n) % n
+	for step in range(1, n + 1):
+		var idx := (selected_seed + delta * step + n) % n
+		if int(seeds.get(GameData.CROP_ORDER[idx], 0)) > 0:
+			_selected_seed_direct(idx)
+			return
+
+
+func _selected_seed_direct(idx: int) -> void:
+	selected_seed = idx
 	Audio.sfx("click")
 	_seeds_dirty = true
 	_update_hud(true)
