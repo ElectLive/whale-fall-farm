@@ -43,6 +43,11 @@ var relic_ids: Array[String] = []
 var boss: Enemy = null
 var boss_ending := false
 var boss_mod_name := ""
+var hover_highlight: TileHighlight
+var pending_cell := Vector2i(-999, -999)
+var pending_active := false
+var pending_timer := 0.0
+var mouse_demo := false
 var shop_offers: Array = []
 var shop_sold: Array[bool] = []
 var mobile: MobileControls
@@ -127,6 +132,11 @@ func _build_world() -> void:
 	farm = Farm.new()
 	world.add_child(farm)
 	farm.setup(1)
+
+	hover_highlight = TileHighlight.new()
+	hover_highlight.z_index = 1500
+	hover_highlight.visible = false
+	world.add_child(hover_highlight)
 
 	crops_root = Node2D.new()
 	crops_root.name = "Crops"
@@ -276,6 +286,9 @@ func _connect_ui() -> void:
 	pause_screen.toggle_autoaim.connect(_toggle_autoaim)
 	pause_screen.toggle_fullscreen.connect(_toggle_fullscreen_from_pause)
 	hud.seed_selected.connect(_select_seed)
+	hud.pause_pressed.connect(func() -> void:
+		if state == State.DAY or state == State.NIGHT:
+			_toggle_pause())
 
 
 func _enable_mobile() -> void:
@@ -316,6 +329,9 @@ func show_title() -> void:
 	codex_screen.visible = false
 	island.modulate = Color.WHITE
 	sea.modulate = Color.WHITE
+	pending_active = false
+	if hover_highlight:
+		hover_highlight.visible = false
 	dawn_screen.visible = false
 	end_screen.visible = false
 	pause_screen.visible = false
@@ -349,6 +365,7 @@ func start_new_run(seed_value: int = 0) -> void:
 	run_active = true
 	fireflies.emitting = false
 	daily_mode = false
+	pending_active = false
 	day = 1
 	gold = 18
 	run_gold = 0
@@ -571,11 +588,28 @@ func _process(delta: float) -> void:
 			_end_night()
 	if run_active and state in [State.DAY, State.NIGHT]:
 		_update_hud(false)
+	_update_mouse_hover()
+	if pending_active:
+		if player == null or player.dead or not can_control():
+			pending_active = false
+		else:
+			pending_timer -= delta
+			var center := farm.tile_center(pending_cell)
+			if player.moving and not player.has_move_target:
+				pending_active = false
+			elif not player.has_move_target and player.global_position.distance_to(center) <= 24.0:
+				interact_cell(pending_cell)
+				pending_active = false
+			elif pending_timer <= 0.0:
+				pending_active = false
 
 
 func start_night() -> void:
 	if state != State.DAY:
 		return
+	pending_active = false
+	if player:
+		player.stop_moving()
 	state = State.NIGHT
 	phase_total = GameData.night_duration(day)
 	phase_time = phase_total
@@ -960,6 +994,21 @@ func _tween_ambient(target: Color) -> void:
 
 # ------------------------------------------------------------------ input
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_cycle_seed(-1)
+			return
+		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_cycle_seed(1)
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if can_control() and player != null:
+				_click_world(get_global_mouse_position())
+			return
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			if can_control() and player != null:
+				player.attack()
+			return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
 	if event.keycode == KEY_ESCAPE:
@@ -991,6 +1040,87 @@ func _unhandled_input(event: InputEvent) -> void:
 			_select_seed(4)
 		KEY_F:
 			toggle_fullscreen()
+
+
+func _cycle_seed(delta: int) -> void:
+	if not can_control():
+		return
+	var n := GameData.CROP_ORDER.size()
+	selected_seed = (selected_seed + delta + n) % n
+	Audio.sfx("click")
+	_seeds_dirty = true
+	_update_hud(true)
+
+
+func _click_world(world_pos: Vector2) -> void:
+	var t := farm.world_to_tile(world_pos)
+	if farm.in_bounds(t):
+		var center := farm.tile_center(t)
+		var dist := player.global_position.distance_to(center)
+		pending_active = true
+		pending_cell = t
+		pending_timer = 2.6
+		_spawn_click_marker(center, Color("#f2c94c"))
+		if dist <= 30.0:
+			player.stop_moving()
+			interact_cell(t)
+			pending_active = false
+		else:
+			var dir := (center - player.global_position).normalized()
+			player.move_to(center - dir * 18.0)
+	else:
+		pending_active = false
+		var target := Vector2(
+			clampf(world_pos.x, -8.0, 248.0),
+			clampf(world_pos.y, -8.0, 136.0))
+		player.move_to(target)
+		_spawn_click_marker(target, Color("#c8d6e8"))
+
+
+func _spawn_click_marker(pos: Vector2, color: Color) -> void:
+	var marker := ClickMarker.new()
+	marker.setup(pos, color)
+	world.add_child(marker)
+
+
+func _update_mouse_hover() -> void:
+	if mouse_demo:
+		return
+	if is_mobile or hover_highlight == null or player == null:
+		return
+	if state != State.DAY and state != State.NIGHT:
+		hover_highlight.visible = false
+		if hud:
+			hud.set_hover_text("", Vector2.ZERO)
+		return
+	if get_viewport().gui_get_hovered_control() != null:
+		hover_highlight.visible = false
+		hud.set_hover_text("", Vector2.ZERO)
+		return
+	var mouse_world := get_global_mouse_position()
+	var screen_pos := get_viewport().get_mouse_position()
+	for e in enemies:
+		if is_instance_valid(e) and not e.dead and e.global_position.distance_to(mouse_world) <= 10.0:
+			hover_highlight.visible = false
+			hud.set_hover_text("右键 · 挥镰", screen_pos)
+			Input.set_default_cursor_shape(Input.CURSOR_CROSS)
+			return
+	var t := farm.world_to_tile(mouse_world)
+	if not farm.in_bounds(t):
+		hover_highlight.visible = false
+		hud.set_hover_text("", Vector2.ZERO)
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
+		return
+	var act := _action_for_cell(t)
+	hover_highlight.visible = true
+	hover_highlight.position = farm.tile_center(t)
+	hover_highlight.set_color(act.get("color", Color.WHITE))
+	var text := String(act.get("label", ""))
+	text = text.replace("E · ", "左键 · ")
+	if act.get("type", "none") == "wait":
+		text = String(act.get("label", ""))
+	hud.set_hover_text(text, screen_pos)
+	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
 
 
 func _select_seed(i: int) -> void:
@@ -1139,9 +1269,14 @@ func crop_at(t: Vector2i) -> Crop:
 
 
 func current_action() -> Dictionary:
-	if player == null or not farm.in_bounds(target_tile()):
+	if player == null:
 		return {"type": "none", "label": "E · 走到田里开始干活", "color": Color(0.7, 0.8, 0.9, 0.7)}
-	var t := target_tile()
+	return _action_for_cell(target_tile())
+
+
+func _action_for_cell(t: Vector2i) -> Dictionary:
+	if player == null or not farm.in_bounds(t):
+		return {"type": "none", "label": "E · 走到田里开始干活", "color": Color(0.7, 0.8, 0.9, 0.7)}
 	var c := crop_at(t)
 	if c != null:
 		if c.mature:
@@ -1164,8 +1299,26 @@ func current_action() -> Dictionary:
 func interact() -> void:
 	if not can_control() or player == null:
 		return
-	var act := current_action()
 	var t := target_tile()
+	_do_action(_action_for_cell(t), t)
+
+
+func interact_cell(t: Vector2i) -> void:
+	if not can_control() or player == null or not farm.in_bounds(t):
+		return
+	var center := farm.tile_center(t)
+	if player.global_position.distance_to(center) > 36.0:
+		return
+	var d := center - player.global_position
+	if d.length() > 1.0:
+		if absf(d.x) > absf(d.y):
+			player.facing = Vector2.RIGHT if d.x > 0 else Vector2.LEFT
+		else:
+			player.facing = Vector2.DOWN if d.y > 0 else Vector2.UP
+	_do_action(_action_for_cell(t), t)
+
+
+func _do_action(act: Dictionary, t: Vector2i) -> void:
 	match act.get("type", "none"):
 		"till":
 			farm.till(t)
@@ -1470,6 +1623,9 @@ func setup_shot(name: String) -> void:
 	match name:
 		"title":
 			show_title()
+		"help":
+			show_title()
+			title_screen._toggle_help()
 		"codex":
 			show_title()
 			_show_codex()
@@ -1520,6 +1676,18 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(6, 4), "chili", 1.0)
 			plants_at(Vector2i(7, 4), "moonwheat", 0.7)
 			phase_time = 48.0
+			_update_hud(true)
+		"mouse":
+			start_new_run(20261029)
+			mouse_demo = true
+			player.position = farm.tile_center(Vector2i(7, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(8, 4), "pumpkin", 1.0)
+			hover_highlight.visible = true
+			hover_highlight.position = farm.tile_center(Vector2i(8, 4))
+			hover_highlight.set_color(Color("#f2c94c"))
+			hud.set_hover_text("左键 · 收获南瓜（24金）", Vector2(760, 390))
+			phase_time = 50.0
 			_update_hud(true)
 		"mist":
 			start_new_run(20261029)
@@ -1658,6 +1826,46 @@ func run_selftest() -> int:
 	_check(pet != null, "pet whale spawned")
 	_check(Engine.max_fps == 60, "fps cap is 60")
 	_check(gold == 18, "starting gold is 18")
+
+	# mouse interaction helpers
+	player.position = farm.tile_center(Vector2i(2, 3))
+	player.move_to(player.position + Vector2(8, 0))
+	_check(player.has_move_target, "click-to-move sets a target")
+	player.stop_moving()
+	interact_cell(Vector2i(2, 4))
+	_check(farm.is_tilled(Vector2i(2, 4)), "click-to-interact tills the clicked tile")
+	var seed_before := selected_seed
+	_cycle_seed(1)
+	_check(selected_seed != seed_before, "mouse wheel cycles the seed belt")
+	selected_seed = 0
+	player.position = farm.tile_center(Vector2i(4, 5))
+	_click_world(farm.tile_center(Vector2i(7, 5)))
+	_check(player.has_move_target, "left click on a far tile starts click-to-move")
+	pending_active = false
+	player.stop_moving()
+
+	# real input-event plumbing
+	var wheel_ev := InputEventMouseButton.new()
+	wheel_ev.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel_ev.pressed = true
+	var wheel_before := selected_seed
+	_unhandled_input(wheel_ev)
+	_check(selected_seed != wheel_before, "mouse wheel event reaches the input handler")
+	selected_seed = 0
+	player.attack_cd = 0.0
+	var right_ev := InputEventMouseButton.new()
+	right_ev.button_index = MOUSE_BUTTON_RIGHT
+	right_ev.pressed = true
+	_unhandled_input(right_ev)
+	_check(player.attack_cd > 0.0, "right click event triggers the scythe")
+	player.stop_moving()
+	var left_ev := InputEventMouseButton.new()
+	left_ev.button_index = MOUSE_BUTTON_LEFT
+	left_ev.pressed = true
+	_unhandled_input(left_ev)
+	_check(player.has_move_target, "left click event starts movement")
+	pending_active = false
+	player.stop_moving()
 
 	# farming chain: till -> plant -> water -> grow -> harvest
 	player.position = farm.tile_center(Vector2i(2, 3))

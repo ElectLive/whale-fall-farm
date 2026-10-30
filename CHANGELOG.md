@@ -3,6 +3,23 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.1.0 — 2026-10-30
+
+### Added
+
+- **Mouse-first world interaction**: left-click a farm tile to walk over and till / plant / water / harvest it; left-click ground to click-to-move.
+- **Right-click scythe** aimed at the cursor (hold to keep attacking); keyboard space still works.
+- **Mouse wheel** cycles the five seed slots.
+- Hover tile highlight, contextual "左键 · …" tooltip, hand/cross cursor, and click destination ring.
+- Clickable HUD pause button (Ⅱ) on desktop; seed slots and pause menus were already clickable.
+
+### Changed
+
+- Left click no longer swings the scythe; it is now movement/work. Attack moved to right click / space.
+- Scythe automatically faces the mouse on desktop, including when using space.
+- Desktop help, pause help and HUD hint text rewritten for mouse controls.
+- `--shot=mouse` and `--shot=help` scenarios; selftest covers click target, click interact, wheel, and right-click attack.
+
 ## v2.0.0 — 2026-10-29（更新 17–20，完整版）
 
 ### Added
@@ -167,7 +184,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.0.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.1.0...main
+[v2.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.0.0
 [v1.6.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.6.0
 [v1.5.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.5.0

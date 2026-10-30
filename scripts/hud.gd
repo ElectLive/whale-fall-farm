@@ -3,6 +3,7 @@ extends Control
 ## In-game HUD: day, timer, gold, hearts, seed belt and context prompt.
 
 signal seed_selected(index: int)
+signal pause_pressed
 
 const HEART_FULL := preload("res://assets/generated/ui/heart_full.png")
 const HEART_EMPTY := preload("res://assets/generated/ui/heart_empty.png")
@@ -24,6 +25,8 @@ var seed_counts: Array[Label] = []
 var _seed_keys: Array[Label] = []
 var _hint: Label
 var pet_label: Label
+var hover_label: Label
+var _pause_btn: Button
 var progress: ProgressBar
 var damage_flash: ColorRect
 var banner_label: Label
@@ -193,9 +196,9 @@ func _build() -> void:
 		seed_panels.append(slot)
 		seed_counts.append(cnt)
 
-	_hint = UiKit.label("E 互动 · 空格 挥镰 · 1-5 选种 · Esc 暂停", 14, Color(0.72, 0.8, 0.9, 0.65))
-	_hint.position = Vector2(958, 668)
-	_hint.size = Vector2(306, 30)
+	_hint = UiKit.label("左键 干活 · 右键 镰 · 滚轮 选种 · Esc 暂停", 13, Color(0.72, 0.8, 0.9, 0.65))
+	_hint.position = Vector2(958, 671)
+	_hint.size = Vector2(306, 28)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 
@@ -203,6 +206,26 @@ func _build() -> void:
 	pet_label.position = Vector2(22, 578)
 	pet_label.size = Vector2(170, 24)
 	add_child(pet_label)
+
+	hover_label = UiKit.label("", 16, Color("#f6f7fb"))
+	hover_label.position = Vector2(0, 0)
+	hover_label.size = Vector2(420, 24)
+	hover_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hover_label.add_theme_color_override("font_outline_color", Color(0.02, 0.03, 0.07, 0.95))
+	hover_label.add_theme_constant_override("outline_size", 4)
+	hover_label.visible = false
+	add_child(hover_label)
+
+	_pause_btn = UiKit.button("Ⅱ", 20)
+	_pause_btn.position = Vector2(1218, 124)
+	_pause_btn.size = Vector2(36, 36)
+	_pause_btn.custom_minimum_size = Vector2(36, 36)
+	_pause_btn.focus_mode = Control.FOCUS_NONE
+	_pause_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_pause_btn.pressed.connect(func() -> void:
+		Audio.sfx("click")
+		pause_pressed.emit())
+	add_child(_pause_btn)
 
 	damage_flash = ColorRect.new()
 	damage_flash.color = Color(0.8, 0.1, 0.15, 0.0)
@@ -341,6 +364,21 @@ func set_mobile(on: bool) -> void:
 		_hint.visible = not on
 	for key in _seed_keys:
 		key.visible = not on
+	if _pause_btn:
+		_pause_btn.visible = not on
+
+
+func set_hover_text(text: String, screen_pos: Vector2) -> void:
+	if hover_label == null:
+		return
+	if text == "":
+		hover_label.visible = false
+		return
+	hover_label.visible = true
+	hover_label.text = text
+	hover_label.position = Vector2(
+		clampf(screen_pos.x + 16.0, 8.0, 1020.0),
+		clampf(screen_pos.y + 16.0, 8.0, 684.0))
 
 
 func set_pet_level(level: int) -> void:
