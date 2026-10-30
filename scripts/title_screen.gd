@@ -8,6 +8,7 @@ signal codex_requested
 signal quit_requested
 
 var _title: Label
+var _diff_btn: Button
 var _help: PanelContainer
 var _t := 0.0
 
@@ -61,6 +62,18 @@ func _build() -> void:
 		start_requested.emit())
 	add_child(start)
 
+	_diff_btn = UiKit.button("难度：%s" % GameData.DIFFICULTY_NAMES[GameData.diff_index()], 16)
+	_diff_btn.position = Vector2(440, 310)
+	_diff_btn.size = Vector2(190, 36)
+	_diff_btn.custom_minimum_size = Vector2(190, 36)
+	_diff_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_diff_btn.pressed.connect(_cycle_difficulty)
+	add_child(_diff_btn)
+	var diff_hint := UiKit.label("点此切换 · 敌人强度 / 夜潮密度", 13, Color(0.72, 0.8, 0.9, 0.75))
+	diff_hint.position = Vector2(440, 350)
+	diff_hint.size = Vector2(220, 20)
+	add_child(diff_hint)
+
 	var daily := UiKit.button("每日挑战", 24)
 	daily.position = Vector2(100, 364)
 	daily.size = Vector2(330, 50)
@@ -94,7 +107,7 @@ func _build() -> void:
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v2.2.0 · 左键攻击 / 右键干活 · 白天有事做", 17, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v2.3.0 · 默认困难 · 敌人更快更密", 17, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -146,6 +159,13 @@ func _build_help() -> PanelContainer:
 
 func _toggle_help() -> void:
 	_help.visible = not _help.visible
+	Audio.sfx("click")
+
+
+func _cycle_difficulty() -> void:
+	SaveGame.difficulty = (int(SaveGame.difficulty) + 1) % 3
+	SaveGame.save_data()
+	_diff_btn.text = "难度：%s" % GameData.DIFFICULTY_NAMES[GameData.diff_index()]
 	Audio.sfx("click")
 
 

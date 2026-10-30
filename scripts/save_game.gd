@@ -12,6 +12,7 @@ var vibration_on := true
 var screen_shake_on := true
 var reduce_flash := false
 var auto_aim := false
+var difficulty := 2
 var daily_best_day := 0
 var daily_best_date := ""
 var save_version := 2
@@ -55,6 +56,7 @@ func load_data() -> void:
 	screen_shake_on = bool(cfg.get_value("settings", "screen_shake_on", true))
 	reduce_flash = bool(cfg.get_value("settings", "reduce_flash", false))
 	auto_aim = bool(cfg.get_value("settings", "auto_aim", false))
+	difficulty = int(cfg.get_value("settings", "difficulty", 2))
 	daily_best_day = int(cfg.get_value("records", "daily_best_day", 0))
 	daily_best_date = String(cfg.get_value("records", "daily_best_date", ""))
 	save_version = int(cfg.get_value("meta", "save_version", 1))
@@ -93,6 +95,7 @@ func save_data() -> void:
 	cfg.set_value("settings", "screen_shake_on", screen_shake_on)
 	cfg.set_value("settings", "reduce_flash", reduce_flash)
 	cfg.set_value("settings", "auto_aim", auto_aim)
+	cfg.set_value("settings", "difficulty", difficulty)
 	cfg.set_value("meta", "save_version", save_version)
 	cfg.set_value("records", "daily_best_day", daily_best_day)
 	cfg.set_value("records", "daily_best_date", daily_best_date)

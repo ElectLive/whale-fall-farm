@@ -26,6 +26,7 @@ var seed_counts: Array[Label] = []
 var _seed_keys: Array[Label] = []
 var _hint: Label
 var pet_label: Label
+var difficulty_label: Label
 var hover_label: Label
 var _pause_btn: Button
 var _skip_btn: Button
@@ -208,6 +209,11 @@ func _build() -> void:
 	pet_label.position = Vector2(22, 578)
 	pet_label.size = Vector2(170, 24)
 	add_child(pet_label)
+
+	difficulty_label = UiKit.label("困难模式", 14, Color("#e2556b"))
+	difficulty_label.position = Vector2(22, 554)
+	difficulty_label.size = Vector2(170, 22)
+	add_child(difficulty_label)
 
 	hover_label = UiKit.label("", 16, Color("#f6f7fb"))
 	hover_label.position = Vector2(0, 0)
@@ -403,6 +409,15 @@ func set_hover_text(text: String, screen_pos: Vector2) -> void:
 func set_pet_level(level: int) -> void:
 	if pet_label:
 		pet_label.text = "小鲸鱼 Lv%d" % level
+
+
+func set_difficulty(idx: int) -> void:
+	if difficulty_label == null:
+		return
+	var names := ["休闲模式", "标准模式", "困难模式"]
+	var colors := [Color("#8fe0b0"), Color("#c8d6e8"), Color("#e2556b")]
+	difficulty_label.text = names[clampi(idx, 0, 2)]
+	difficulty_label.add_theme_color_override("font_color", colors[clampi(idx, 0, 2)])
 
 
 func _seed_icon_id(crop_id: String) -> String:

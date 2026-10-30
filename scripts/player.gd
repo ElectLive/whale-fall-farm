@@ -207,7 +207,7 @@ func hurt(amount: int, source: Node = null) -> void:
 	if dead or invuln > 0.0:
 		return
 	hp -= amount
-	invuln = 0.9
+	invuln = 0.9 * GameData.diff_invuln()
 	hurt_flash = 0.5
 	game.on_player_hurt(amount, source)
 	if hp <= 0:

@@ -3,6 +3,21 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.3.0 — 2026-10-30
+
+### Added
+
+- **Three difficulty levels** on the title screen: 休闲 / 标准 / 困难, persisted in save settings. Default is **困难**.
+- HUD bottom-left difficulty label; title difficulty button and hint.
+- Hard mode tuning: 5 HP, 12 starting gold, enemy HP ×1.35, speed ×1.30, wave count ×1.45, spawn interval ×0.75, gull frequency ×0.65, invulnerability ×0.65, extra +5% elite chance.
+
+### Changed
+
+- Enemy speed now scales with day (+4.5% per day) on all difficulties.
+- Starting gold and HP come from the chosen difficulty instead of fixed 18/6.
+- Night plans are scaled by difficulty after construction.
+- Selftest covers difficulty HP and wave scaling.
+
 ## v2.2.0 — 2026-10-30
 
 ### Changed
@@ -203,7 +218,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.2.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.3.0...main
+[v2.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.3.0
 [v2.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.2.0
 [v2.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.0.0

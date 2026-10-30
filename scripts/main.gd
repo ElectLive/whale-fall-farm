@@ -372,7 +372,7 @@ func start_new_run(seed_value: int = 0) -> void:
 	daily_mode = false
 	pending_active = false
 	day = 1
-	gold = 18
+	gold = GameData.starting_gold()
 	run_gold = 0
 	day_gold = 0
 	kills = 0
@@ -411,8 +411,12 @@ func start_new_run(seed_value: int = 0) -> void:
 	player = Player.new()
 	player.setup(self)
 	player.position = farm.tile_center(Vector2i(7, 4))
+	player.max_hp = GameData.starting_hp()
+	player.hp = player.max_hp
 	entities.add_child(player)
 	player.died.connect(_on_player_signal_died)
+	hud.refresh_hearts(player.hp, player.max_hp)
+	hud.set_difficulty(SaveGame.difficulty)
 
 	pet = PetWhale.new()
 	pet.setup(self)
@@ -471,7 +475,7 @@ func day_setup() -> void:
 	day_gold = 0
 	day_kills = 0
 	forage_timer = 2.5
-	day_gull_timer = 16.0
+	day_gull_timer = 16.0 * GameData.diff_gull()
 	fireflies.emitting = false
 	sea.set_night(false)
 	var wet := rainy or stormy
@@ -554,7 +558,7 @@ func range_mult() -> float:
 
 
 func enemy_speed_mult() -> float:
-	return float(mods["slow"])
+	return float(mods["slow"]) * GameData.speed_scale(day)
 
 
 func is_night_phase() -> bool:
@@ -583,7 +587,7 @@ func _process(delta: float) -> void:
 		phase_time -= delta
 		day_gull_timer -= delta
 		if day_gull_timer <= 0.0:
-			day_gull_timer = rng.randf_range(16.0, 23.0)
+			day_gull_timer = rng.randf_range(16.0, 23.0) * GameData.diff_gull()
 			if not crops.is_empty() and not _has_gull():
 				_spawn_day_gull()
 		forage_timer -= delta
@@ -777,7 +781,7 @@ func _spawn_boss() -> void:
 
 
 func _tick_spawning() -> void:
-	var interval := maxf(0.7, SPAWN_INTERVAL_BASE - day * 0.09)
+	var interval := maxf(0.55, (SPAWN_INTERVAL_BASE - day * 0.09) * GameData.diff_spawn())
 	while spawn_timer <= 0.0 and not night_queue.is_empty():
 		var kind: String = night_queue.pop_front()
 		_spawn_enemy(kind)
@@ -793,7 +797,7 @@ func _spawn_enemy_at(kind: String, pos: Vector2) -> Enemy:
 	e.setup(kind, pos, self, GameData.hp_scale(day))
 	entities.add_child(e)
 	enemies.append(e)
-	if kind != "boss" and rng.randf() < 0.08 + day * 0.005:
+	if kind != "boss" and rng.randf() < 0.08 + day * 0.005 + GameData.diff_elite_bonus():
 		e.make_elite()
 	if not test_mode:
 		SaveGame.discover_enemy(kind)
@@ -1978,6 +1982,8 @@ func run_selftest() -> int:
 	_test_failures = 0
 	_test_checks = 0
 	test_mode = true
+	var old_difficulty := SaveGame.difficulty
+	SaveGame.difficulty = 1
 
 	start_new_run(4242)
 	_check(state == State.DAY, "run starts in DAY state")
@@ -1986,6 +1992,19 @@ func run_selftest() -> int:
 	_check(pet != null, "pet whale spawned")
 	_check(Engine.max_fps == 60, "fps cap is 60")
 	_check(gold == 18, "starting gold is 18")
+	SaveGame.difficulty = 2
+	var hard_hp := GameData.hp_scale(1)
+	SaveGame.difficulty = 1
+	_check(hard_hp > GameData.hp_scale(1), "hard mode scales enemy hp")
+	var normal_wave := 0
+	for entry in GameData.night_plan(3):
+		normal_wave += int(entry["count"])
+	SaveGame.difficulty = 2
+	var hard_wave := 0
+	for entry in GameData.night_plan(3):
+		hard_wave += int(entry["count"])
+	SaveGame.difficulty = 1
+	_check(hard_wave > normal_wave, "hard mode adds more night enemies")
 
 	# mouse interaction helpers
 	player.position = farm.tile_center(Vector2i(2, 3))
@@ -2279,6 +2298,12 @@ func run_selftest() -> int:
 	skip_day()
 	_check(state == State.NIGHT, "skip day starts the night")
 
+	# hard mode start
+	SaveGame.difficulty = 2
+	start_new_run(4242)
+	_check(gold == 12 and player != null and player.max_hp == 5, "hard mode starts with 5 hp and 12 gold")
+	SaveGame.difficulty = 1
+
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day
 	SaveGame.best_day = 9
@@ -2287,6 +2312,7 @@ func run_selftest() -> int:
 	SaveGame.load_data()
 	_check(SaveGame.best_day == 9, "save/load roundtrip")
 	SaveGame.best_day = old_best
+	SaveGame.difficulty = old_difficulty
 	SaveGame.save_data()
 
 	test_mode = false

@@ -6,6 +6,7 @@ const TILE := 16
 const FARM_W := 15
 const FARM_H := 8
 const WIN_DAY := 7
+const DIFFICULTY_NAMES := ["休闲", "标准", "困难"]
 
 const CROPS := {
 	"radish": {
@@ -122,26 +123,76 @@ static func night_duration(day: int) -> float:
 
 
 static func night_plan(day: int) -> Array:
+	var plan: Array
 	if day == WIN_DAY:
-		return [
+		plan = [
 			{"kind": "slime", "count": 6},
 			{"kind": "crow", "count": 3},
 			{"kind": "vine", "count": 2},
 			{"kind": "frog", "count": 3},
 			{"kind": "beetle", "count": 2},
 		]
-	var extra := maxi(0, day - 7)
-	return [
-		{"kind": "slime", "count": 4 + (day - 1) * 2 + extra * 2},
-		{"kind": "crow", "count": maxi(0, day - 1) + extra},
-		{"kind": "vine", "count": maxi(0, day - 3) + extra},
-		{"kind": "frog", "count": maxi(0, day - 4) + extra},
-		{"kind": "beetle", "count": maxi(0, day - 5) + extra},
-	]
+	else:
+		var extra := maxi(0, day - 7)
+		plan = [
+			{"kind": "slime", "count": 4 + (day - 1) * 2 + extra * 2},
+			{"kind": "crow", "count": maxi(0, day - 1) + extra},
+			{"kind": "vine", "count": maxi(0, day - 3) + extra},
+			{"kind": "frog", "count": maxi(0, day - 4) + extra},
+			{"kind": "beetle", "count": maxi(0, day - 5) + extra},
+		]
+	var factor := diff_count()
+	for entry in plan:
+		entry["count"] = maxi(1, roundi(float(entry["count"]) * factor))
+	return plan
 
 
 static func hp_scale(day: int) -> float:
-	return 1.0 + (day - 1) * 0.12
+	return (1.0 + (day - 1) * 0.12) * diff_hp()
+
+
+static func speed_scale(day: int) -> float:
+	return (1.0 + (day - 1) * 0.045) * diff_speed()
+
+
+static func diff_index() -> int:
+	return clampi(int(SaveGame.difficulty), 0, 2)
+
+
+static func diff_hp() -> float:
+	return [0.9, 1.0, 1.35][diff_index()]
+
+
+static func diff_speed() -> float:
+	return [0.95, 1.0, 1.3][diff_index()]
+
+
+static func diff_count() -> float:
+	return [0.85, 1.0, 1.45][diff_index()]
+
+
+static func diff_spawn() -> float:
+	return [1.15, 1.0, 0.75][diff_index()]
+
+
+static func diff_gull() -> float:
+	return [1.3, 1.0, 0.65][diff_index()]
+
+
+static func diff_invuln() -> float:
+	return [1.1, 1.0, 0.65][diff_index()]
+
+
+static func diff_elite_bonus() -> float:
+	return [0.0, 0.0, 0.05][diff_index()]
+
+
+static func starting_gold() -> int:
+	return [22, 18, 12][diff_index()]
+
+
+static func starting_hp() -> int:
+	return [7, 6, 5][diff_index()]
 
 
 static func seed_pack() -> Array:
