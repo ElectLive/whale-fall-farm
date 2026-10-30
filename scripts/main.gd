@@ -39,6 +39,9 @@ var player: Player
 var pet: PetWhale
 var enemies: Array[Enemy] = []
 var crops: Array[Crop] = []
+var forages: Array[Forage] = []
+var forage_timer := 0.0
+var day_gull_timer := 0.0
 var relic_ids: Array[String] = []
 var boss: Enemy = null
 var boss_ending := false
@@ -46,6 +49,7 @@ var boss_mod_name := ""
 var hover_highlight: TileHighlight
 var pending_cell := Vector2i(-999, -999)
 var pending_active := false
+var pending_mode := "work"
 var pending_timer := 0.0
 var mouse_demo := false
 var shop_offers: Array = []
@@ -289,6 +293,7 @@ func _connect_ui() -> void:
 	hud.pause_pressed.connect(func() -> void:
 		if state == State.DAY or state == State.NIGHT:
 			_toggle_pause())
+	hud.skip_day_pressed.connect(skip_day)
 
 
 func _enable_mobile() -> void:
@@ -438,6 +443,10 @@ func _clear_run() -> void:
 		if is_instance_valid(c):
 			c.queue_free()
 	crops.clear()
+	for f in forages:
+		if is_instance_valid(f):
+			f.queue_free()
+	forages.clear()
 	if player != null and is_instance_valid(player):
 		player.queue_free()
 	player = null
@@ -461,6 +470,8 @@ func day_setup() -> void:
 	phase_time = DAY_LENGTH
 	day_gold = 0
 	day_kills = 0
+	forage_timer = 2.5
+	day_gull_timer = 16.0
 	fireflies.emitting = false
 	sea.set_night(false)
 	var wet := rainy or stormy
@@ -570,6 +581,16 @@ func _process(delta: float) -> void:
 			Audio.sfx("explosion", 0.55, -12.0)
 	if state == State.DAY:
 		phase_time -= delta
+		day_gull_timer -= delta
+		if day_gull_timer <= 0.0:
+			day_gull_timer = rng.randf_range(16.0, 23.0)
+			if not crops.is_empty() and not _has_gull():
+				_spawn_day_gull()
+		forage_timer -= delta
+		if forage_timer <= 0.0:
+			forage_timer = rng.randf_range(5.5, 8.5)
+			if forages.size() < 3:
+				_spawn_forage()
 		if phase_time <= 0.0:
 			start_night()
 	elif state == State.NIGHT:
@@ -604,12 +625,96 @@ func _process(delta: float) -> void:
 				pending_active = false
 
 
+func _has_gull() -> bool:
+	for e in enemies:
+		if is_instance_valid(e) and e.kind == "gull" and not e.dead:
+			return true
+	return false
+
+
+func _spawn_day_gull() -> void:
+	var pos: Vector2
+	match rng.randi_range(0, 3):
+		0: pos = Vector2(10, rng.randf_range(12, 118))
+		1: pos = Vector2(230, rng.randf_range(12, 118))
+		2: pos = Vector2(rng.randf_range(24, 216), 12)
+		_: pos = Vector2(rng.randf_range(24, 216), 118)
+	var e := _spawn_enemy_at("gull", pos)
+	if rng.randf() < 0.15:
+		e.make_elite()
+	hud.banner("海鸥来偷菜了！左键赶走它", Color("#c8d6e8"), 1.4)
+	Audio.sfx("horn", 1.35, -10.0)
+
+
+func _spawn_forage() -> void:
+	var pos := Vector2.ZERO
+	var ok := false
+	for i in range(12):
+		pos = Vector2(rng.randf_range(18, 232), rng.randf_range(10, 126))
+		if player != null and pos.distance_to(player.position) < 30.0:
+			continue
+		ok = true
+		for f in forages:
+			if is_instance_valid(f) and f.position.distance_to(pos) < 18.0:
+				ok = false
+				break
+		if ok:
+			break
+	if not ok:
+		return
+	var f := Forage.new()
+	f.setup(self, "shell" if rng.randf() < 0.55 else "star", rng.randi_range(2, 4))
+	f.position = pos
+	entities.add_child(f)
+	forages.append(f)
+
+
+func collect_forage(f: Forage) -> void:
+	if f == null or not is_instance_valid(f):
+		return
+	forages.erase(f)
+	gold += f.value
+	run_gold += f.value
+	day_gold += f.value
+	float_text("+%d 金" % f.value, f.position + Vector2(0, -12), Color("#f2c94c"), 9)
+	if rng.randf() < 0.3:
+		var id: String = GameData.CROP_ORDER[rng.randi_range(0, GameData.CROP_ORDER.size() - 1)]
+		seeds[id] = int(seeds[id]) + 1
+		_seeds_dirty = true
+		float_text("+%s种子" % GameData.CROPS[id]["name"], f.position + Vector2(0, -24), Color("#8fe0b0"), 8)
+	Audio.sfx("coin", 1.1, -4.0)
+	burst(f.position, Color("#f2c94c"), 6)
+	f.queue_free()
+	_update_hud(true)
+
+
+func skip_day() -> void:
+	if state != State.DAY or not can_control():
+		return
+	var remain := phase_time
+	for c in crops:
+		if is_instance_valid(c):
+			c.advance(remain)
+	Audio.sfx("dawn", 0.9, -6.0)
+	hud.banner("提前收工，作物在潮声里又长了一截", Color("#f6e7b4"), 1.4)
+	phase_time = 0.0
+	start_night()
+
+
 func start_night() -> void:
 	if state != State.DAY:
 		return
 	pending_active = false
 	if player:
 		player.stop_moving()
+	for f in forages:
+		if is_instance_valid(f):
+			f.queue_free()
+	forages.clear()
+	for e in enemies.duplicate():
+		if is_instance_valid(e) and e.kind == "gull":
+			enemies.erase(e)
+			e.queue_free()
 	state = State.NIGHT
 	phase_total = GameData.night_duration(day)
 	phase_time = phase_total
@@ -1003,11 +1108,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if can_control() and player != null:
-				_click_world(get_global_mouse_position())
+				_left_click_world(get_global_mouse_position())
 			return
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if can_control() and player != null:
-				player.attack()
+				_right_click_world(get_global_mouse_position())
 			return
 	if not (event is InputEventKey) or not event.pressed or event.echo:
 		return
@@ -1040,6 +1145,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_select_seed(4)
 		KEY_F:
 			toggle_fullscreen()
+		KEY_R:
+			skip_day()
 
 
 func _cycle_seed(delta: int) -> void:
@@ -1060,29 +1167,50 @@ func _selected_seed_direct(idx: int) -> void:
 	_update_hud(true)
 
 
-func _click_world(world_pos: Vector2) -> void:
+func _left_click_world(world_pos: Vector2) -> void:
 	var t := farm.world_to_tile(world_pos)
 	if farm.in_bounds(t):
-		var center := farm.tile_center(t)
-		var dist := player.global_position.distance_to(center)
-		pending_active = true
-		pending_cell = t
-		pending_timer = 2.6
-		_spawn_click_marker(center, Color("#f2c94c"))
-		if dist <= 30.0:
-			player.stop_moving()
-			interact_cell(t)
-			pending_active = false
-		else:
-			var dir := (center - player.global_position).normalized()
-			player.move_to(center - dir * 18.0)
-	else:
+		var c := crop_at(t)
+		if c != null and c.mature:
+			_command_tile(t, "harvest")
+			return
+	# no crop to harvest: left click is always the scythe
+	player.attack()
+
+
+func _right_click_world(world_pos: Vector2) -> void:
+	var t := farm.world_to_tile(world_pos)
+	if farm.in_bounds(t):
+		var act := _action_for_cell(t)
+		if act.get("type", "none") == "harvest":
+			float_text("用左键收获", player.position + Vector2(0, -22), Color("#f2c94c"), 9)
+			Audio.sfx("click", 0.7)
+			return
+		_command_tile(t, "work")
+		return
+	pending_active = false
+	var target := Vector2(
+		clampf(world_pos.x, -8.0, 248.0),
+		clampf(world_pos.y, -8.0, 136.0))
+	player.move_to(target)
+	_spawn_click_marker(target, Color("#c8d6e8"))
+
+
+func _command_tile(t: Vector2i, mode: String) -> void:
+	var center := farm.tile_center(t)
+	var dist := player.global_position.distance_to(center)
+	pending_active = true
+	pending_cell = t
+	pending_mode = mode
+	pending_timer = 2.6
+	_spawn_click_marker(center, Color("#f2c94c"))
+	if dist <= 30.0:
+		player.stop_moving()
+		interact_cell(t)
 		pending_active = false
-		var target := Vector2(
-			clampf(world_pos.x, -8.0, 248.0),
-			clampf(world_pos.y, -8.0, 136.0))
-		player.move_to(target)
-		_spawn_click_marker(target, Color("#c8d6e8"))
+	else:
+		var dir := (center - player.global_position).normalized()
+		player.move_to(center - dir * 18.0)
 
 
 func _spawn_click_marker(pos: Vector2, color: Color) -> void:
@@ -1110,7 +1238,7 @@ func _update_mouse_hover() -> void:
 	for e in enemies:
 		if is_instance_valid(e) and not e.dead and e.global_position.distance_to(mouse_world) <= 10.0:
 			hover_highlight.visible = false
-			hud.set_hover_text("右键 · 挥镰", screen_pos)
+			hud.set_hover_text("左键 · 挥镰", screen_pos)
 			Input.set_default_cursor_shape(Input.CURSOR_CROSS)
 			return
 	var t := farm.world_to_tile(mouse_world)
@@ -1124,9 +1252,15 @@ func _update_mouse_hover() -> void:
 	hover_highlight.position = farm.tile_center(t)
 	hover_highlight.set_color(act.get("color", Color.WHITE))
 	var text := String(act.get("label", ""))
-	text = text.replace("E · ", "左键 · ")
-	if act.get("type", "none") == "wait":
-		text = String(act.get("label", ""))
+	var act_type := String(act.get("type", "none"))
+	if act_type == "harvest":
+		text = text.replace("E · ", "左键 · ")
+	elif act_type == "wait":
+		pass
+	elif act_type == "no_seed":
+		text = "右键 · " + text
+	else:
+		text = text.replace("E · ", "右键 · ")
 	hud.set_hover_text(text, screen_pos)
 	Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
 
@@ -1685,6 +1819,24 @@ func setup_shot(name: String) -> void:
 			plants_at(Vector2i(7, 4), "moonwheat", 0.7)
 			phase_time = 48.0
 			_update_hud(true)
+		"daylife":
+			start_new_run(20261029)
+			day = 3
+			gold = 45
+			player.position = farm.tile_center(Vector2i(5, 4))
+			player.facing = Vector2.RIGHT
+			plants_at(Vector2i(6, 4), "pumpkin", 0.8)
+			plants_at(Vector2i(7, 4), "chili", 1.0)
+			plants_at(Vector2i(8, 4), "radish", 0.6)
+			for pos in [Vector2(80, 70), Vector2(180, 100), Vector2(48, 30)]:
+				var f := Forage.new()
+				f.setup(self, "shell" if int(pos.x) % 2 == 0 else "star", 3)
+				f.position = pos
+				entities.add_child(f)
+				forages.append(f)
+			_spawn_enemy_at("gull", Vector2(190, 70))
+			phase_time = 50.0
+			_update_hud(true)
 		"mouse":
 			start_new_run(20261029)
 			mouse_demo = true
@@ -1847,8 +1999,8 @@ func run_selftest() -> int:
 	_check(selected_seed != seed_before, "mouse wheel cycles the seed belt")
 	selected_seed = 0
 	player.position = farm.tile_center(Vector2i(4, 5))
-	_click_world(farm.tile_center(Vector2i(7, 5)))
-	_check(player.has_move_target, "left click on a far tile starts click-to-move")
+	_command_tile(Vector2i(7, 5), "work")
+	_check(player.has_move_target, "right click on a far tile starts click-to-move")
 	pending_active = false
 	player.stop_moving()
 
@@ -1861,19 +2013,40 @@ func run_selftest() -> int:
 	_check(selected_seed != wheel_before, "mouse wheel event reaches the input handler")
 	selected_seed = 0
 	player.attack_cd = 0.0
-	var right_ev := InputEventMouseButton.new()
-	right_ev.button_index = MOUSE_BUTTON_RIGHT
-	right_ev.pressed = true
-	_unhandled_input(right_ev)
-	_check(player.attack_cd > 0.0, "right click event triggers the scythe")
-	player.stop_moving()
 	var left_ev := InputEventMouseButton.new()
 	left_ev.button_index = MOUSE_BUTTON_LEFT
 	left_ev.pressed = true
 	_unhandled_input(left_ev)
-	_check(player.has_move_target, "left click event starts movement")
+	_check(player.attack_cd > 0.0, "left click event swings the scythe")
+	player.stop_moving()
+	var right_ev := InputEventMouseButton.new()
+	right_ev.button_index = MOUSE_BUTTON_RIGHT
+	right_ev.pressed = true
+	_unhandled_input(right_ev)
+	_check(player.has_move_target, "right click event starts movement")
 	pending_active = false
 	player.stop_moving()
+
+	# day activities: crop fast-forward, forage, gull raid
+	var adv_test := Crop.new()
+	adv_test.setup("radish", Vector2i(10, 6), farm, self)
+	crops_root.add_child(adv_test)
+	adv_test.water()
+	adv_test.advance(5.0)
+	_check(adv_test.growth > 0.0, "crop advance fast-forwards growth")
+	adv_test.queue_free()
+	var gold_before_forage := gold
+	var forage_test := Forage.new()
+	forage_test.setup(self, "shell", 3)
+	forage_test.position = player.position
+	entities.add_child(forage_test)
+	collect_forage(forage_test)
+	_check(gold == gold_before_forage + 3, "collecting forage grants gold")
+	_spawn_day_gull()
+	_check(_has_gull(), "daytime gull spawns")
+	for e in enemies.duplicate():
+		if is_instance_valid(e) and e.kind == "gull":
+			e.take_damage(999, Vector2.RIGHT)
 
 	# farming chain: till -> plant -> water -> grow -> harvest
 	player.position = farm.tile_center(Vector2i(2, 3))
@@ -2032,6 +2205,8 @@ func run_selftest() -> int:
 	_on_relic_chosen("golden")
 	_check(is_equal_approx(float(mods["golden_chance"]), 0.1), "golden relic adds mutation chance")
 	var base_growth := growth_mult()
+	biome = "whale"
+	base_growth = growth_mult()
 	biome = "mist"
 	_check(growth_mult() > base_growth, "mist harbor boosts crop growth")
 	biome = "whale"
@@ -2098,6 +2273,11 @@ func run_selftest() -> int:
 	player.attack_cd = 0.0
 	mobile.attack_tap.emit()
 	_check(player.attack_cd > 0.0, "touch attack swings the scythe")
+
+	# skip the rest of the day
+	start_new_run(20261029)
+	skip_day()
+	_check(state == State.NIGHT, "skip day starts the night")
 
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day

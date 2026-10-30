@@ -3,6 +3,25 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.2.0 — 2026-10-30
+
+### Changed
+
+- **Mouse buttons swapped to match intent**: left click is now attack / harvest; right click is move / till / plant / water.
+- Left click on a mature crop walks over and harvests it; left click anywhere else swings the scythe toward the cursor.
+- Right click on a mature crop shows "用左键收获" instead of harvesting.
+
+### Added
+
+- **Daytime gulls**: every 16–23s a 偷菜海鸥 raids the farm and eats a crop; kill it with left click for gold.
+- **Beachcombing**: shells and starfish spawn on the island every 5.5–8.5s; walk over them for 2–4 gold, 30% chance of a seed.
+- **Skip day**: press `R` or click the new 「结束白天」 HUD button; watered crops receive the remaining day's growth, then night starts.
+- Two new forage sprites; `--shot=daylife` scenario.
+
+### Fixed
+
+- Mouse wheel now skips empty seed stacks.
+
 ## v2.1.0 — 2026-10-30
 
 ### Added
@@ -184,7 +203,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.1.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.2.0...main
+[v2.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.2.0
 [v2.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.1.0
 [v2.0.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.0.0
 [v1.6.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v1.6.0

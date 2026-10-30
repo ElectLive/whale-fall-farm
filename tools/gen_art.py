@@ -570,6 +570,41 @@ def frog_sheet() -> Image.Image:
     return sheet
 
 
+def forage_shell() -> Image.Image:
+    im, d = new(16, 16)
+    shell = (238, 196, 164, 255)
+    dark = (190, 132, 110, 255)
+    light = (255, 232, 208, 255)
+    disc(d, 8, 10, 5, 4, shell)
+    disc(d, 8, 10, 4, 3, (246, 214, 184, 255))
+    for i in range(4):
+        a = -0.6 + i * 0.45
+        x = int(8 + 4.5 * math.cos(a))
+        y = int(10 + 3.5 * math.sin(a))
+        px(d, x, y, dark)
+    px(d, 8, 8, light)
+    px(d, 7, 9, light)
+    px(d, 5, 12, dark)
+    box(d, 5, 13, 11, 13, dark)
+    return im
+
+
+def forage_star() -> Image.Image:
+    im, d = new(16, 16)
+    star = (242, 154, 84, 255)
+    dark = (204, 112, 62, 255)
+    light = (255, 202, 122, 255)
+    pts = []
+    for i in range(10):
+        a = -math.pi / 2 + i * math.pi / 5
+        r = 6.5 if i % 2 == 0 else 2.8
+        pts.append((8 + math.cos(a) * r, 9 + math.sin(a) * r))
+    d.polygon(pts, fill=star)
+    d.line(pts + [pts[0]], fill=dark, width=1)
+    disc(d, 8, 9, 1.6, 1.4, light)
+    return im
+
+
 def pet_whale_frame(step: int) -> Image.Image:
     im, d = new(16, 16)
     bob = step
@@ -1318,6 +1353,8 @@ def main() -> None:
     save(frog_sheet(), "chars", "frog.png")
     save(beetle_sheet(), "chars", "beetle.png")
     save(pet_whale_sheet(), "chars", "pet_whale.png")
+    save(forage_shell(), "items", "shell.png")
+    save(forage_star(), "items", "star.png")
     save(shadow(), "chars", "shadow.png")
     # crops
     for i in range(4):

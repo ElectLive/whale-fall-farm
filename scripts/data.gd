@@ -46,6 +46,10 @@ const ENEMIES := {
 		"name": "偷穗鸦", "hp": 2, "speed": 34.0, "damage": 1, "gold": 3,
 		"texture": "res://assets/generated/chars/crow.png", "frames": 2, "scale": 1.0,
 	},
+	"gull": {
+		"name": "偷菜海鸥", "hp": 3, "speed": 38.0, "damage": 1, "gold": 3,
+		"texture": "res://assets/generated/chars/crow.png", "frames": 2, "scale": 0.95,
+	},
 	"vine": {
 		"name": "缠根怪", "hp": 7, "speed": 13.0, "damage": 2, "gold": 5,
 		"texture": "res://assets/generated/chars/vine.png", "frames": 2, "scale": 1.0,

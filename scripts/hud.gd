@@ -4,6 +4,7 @@ extends Control
 
 signal seed_selected(index: int)
 signal pause_pressed
+signal skip_day_pressed
 
 const HEART_FULL := preload("res://assets/generated/ui/heart_full.png")
 const HEART_EMPTY := preload("res://assets/generated/ui/heart_empty.png")
@@ -27,6 +28,7 @@ var _hint: Label
 var pet_label: Label
 var hover_label: Label
 var _pause_btn: Button
+var _skip_btn: Button
 var progress: ProgressBar
 var damage_flash: ColorRect
 var banner_label: Label
@@ -196,9 +198,9 @@ func _build() -> void:
 		seed_panels.append(slot)
 		seed_counts.append(cnt)
 
-	_hint = UiKit.label("左键 干活 · 右键 镰 · 滚轮 选种 · Esc 暂停", 13, Color(0.72, 0.8, 0.9, 0.65))
-	_hint.position = Vector2(958, 671)
-	_hint.size = Vector2(306, 28)
+	_hint = UiKit.label("左键 镰/收获 · 右键 干活 · 滚轮 选种 · R 收工", 13, Color(0.72, 0.8, 0.9, 0.65))
+	_hint.position = Vector2(940, 671)
+	_hint.size = Vector2(324, 28)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 
@@ -226,6 +228,17 @@ func _build() -> void:
 		Audio.sfx("click")
 		pause_pressed.emit())
 	add_child(_pause_btn)
+
+	_skip_btn = UiKit.button("结束白天", 14)
+	_skip_btn.position = Vector2(1032, 124)
+	_skip_btn.size = Vector2(96, 36)
+	_skip_btn.custom_minimum_size = Vector2(96, 36)
+	_skip_btn.focus_mode = Control.FOCUS_NONE
+	_skip_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_skip_btn.pressed.connect(func() -> void:
+		Audio.sfx("click")
+		skip_day_pressed.emit())
+	add_child(_skip_btn)
 
 	damage_flash = ColorRect.new()
 	damage_flash.color = Color(0.8, 0.1, 0.15, 0.0)
@@ -293,6 +306,11 @@ func set_day(day: int, phase_text: String, phase_color: Color) -> void:
 	day_label.text = "第 %d 天" % day
 	phase_label.text = phase_text
 	phase_label.add_theme_color_override("font_color", phase_color)
+	if _skip_btn:
+		_skip_btn.visible = phase_text == "白天"
+	if _hint:
+		_hint.text = "左键 镰/收获 · 右键 干活 · 滚轮 选种 · R 收工" if phase_text == "白天" \
+			else "左键 镰 · 右键 移动 · 滚轮 选种 · Esc 暂停"
 
 
 func set_timer(seconds_left: float, total: float, is_night: bool) -> void:

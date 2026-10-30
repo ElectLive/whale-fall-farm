@@ -110,6 +110,24 @@ func water() -> void:
 	queue_redraw()
 
 
+func advance(seconds: float) -> void:
+	## Fast-forward growth when the player skips the rest of the day (no banners).
+	if mature or not watered:
+		return
+	if night_only and not bool(game.is_night_phase()):
+		return
+	growth = minf(grow_time, growth + seconds * float(game.growth_mult()))
+	if growth >= grow_time:
+		mature = true
+		stage = 3
+		sprite.texture = TEX[kind][stage]
+		glow.modulate = _glow_color(0.65)
+	else:
+		stage = clampi(int(growth / grow_time * 3.0), 0, 2)
+		sprite.texture = TEX[kind][stage]
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
 	if not watered or mature:
 		return

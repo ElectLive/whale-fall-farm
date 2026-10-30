@@ -94,7 +94,7 @@ func _build() -> void:
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v2.1.0 · 鼠标交互重做 · 全部美术与音乐由程序生成", 17, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v2.2.0 · 左键攻击 / 右键干活 · 白天有事做", 17, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -122,9 +122,10 @@ func _build_help() -> PanelContainer:
 	var title := UiKit.label("操作", 30, UiKit.GOLD)
 	v.add_child(title)
 	var lines := [
-		"左键 —— 点地移动 / 松土 / 播种 / 浇水 / 收获",
-		"右键 —— 朝指针挥镰（可长按）",
+		"左键 —— 挥镰 / 收获成熟作物",
+		"右键 —— 点地移动 / 松土 / 播种 / 浇水",
 		"滚轮 —— 切换种子 · 右上 Ⅱ 暂停",
+		"R —— 提前结束白天",
 		"WASD / 方向键 —— 移动 · E 互动",
 		"空格 —— 挥镰 · 1-5 选种",
 		"Esc 暂停 · F 全屏",

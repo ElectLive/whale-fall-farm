@@ -78,6 +78,8 @@ func _ready() -> void:
 	if is_boss:
 		enemy_scale = 1.15
 	sprite.scale = Vector2(enemy_scale, enemy_scale)
+	if kind == "gull":
+		sprite.modulate = Color(0.86, 0.92, 1.0)
 	add_child(sprite)
 	queue_redraw()
 	if is_boss:
@@ -106,7 +108,7 @@ func _physics_process(delta: float) -> void:
 		desired = _boss_behaviour(delta)
 	elif kind == "frog":
 		desired = _frog_behaviour(delta)
-	elif kind == "crow":
+	elif kind == "crow" or kind == "gull":
 		desired = _crow_behaviour(delta)
 	else:
 		desired = (player.global_position - global_position)

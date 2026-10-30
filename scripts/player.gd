@@ -121,9 +121,11 @@ func _physics_process(delta: float) -> void:
 			foot_t = 0.30
 			game.burst(position + Vector2(0, 7), Color(0.82, 0.76, 0.60, 0.7), 2)
 	_animate(delta)
-	# attack input: space held, right mouse held (desktop), or the touch button
-	if Input.is_key_pressed(KEY_SPACE) or game.touch_attack_held \
-			or (not game.is_mobile and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)):
+	# attack input: space held, left mouse held (desktop), or the touch button
+	var mouse_attack: bool = not game.is_mobile and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	if mouse_attack and game.pending_active and game.pending_mode == "harvest":
+		mouse_attack = false
+	if Input.is_key_pressed(KEY_SPACE) or game.touch_attack_held or mouse_attack:
 		attack()
 
 
