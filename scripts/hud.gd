@@ -414,10 +414,11 @@ func set_pet_level(level: int) -> void:
 func set_difficulty(idx: int) -> void:
 	if difficulty_label == null:
 		return
-	var names := ["休闲模式", "标准模式", "困难模式"]
-	var colors := [Color("#8fe0b0"), Color("#c8d6e8"), Color("#e2556b")]
-	difficulty_label.text = names[clampi(idx, 0, 2)]
-	difficulty_label.add_theme_color_override("font_color", colors[clampi(idx, 0, 2)])
+	var names := ["休闲模式", "标准模式", "困难模式", "深渊模式"]
+	var colors := [Color("#8fe0b0"), Color("#c8d6e8"), Color("#e2556b"), Color("#b18cff")]
+	var i := clampi(idx, 0, 3)
+	difficulty_label.text = names[i]
+	difficulty_label.add_theme_color_override("font_color", colors[i])
 
 
 func _seed_icon_id(crop_id: String) -> String:

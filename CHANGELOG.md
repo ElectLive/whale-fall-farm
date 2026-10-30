@@ -3,6 +3,21 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.4.0 — 2026-10-30
+
+### Added
+
+- **Fourth difficulty 深渊 (Abyss)**: 4 HP, 8 gold, enemy HP ×1.55, speed ×1.45, wave count ×1.80, spawn ×0.62, gull ×0.50, invuln ×0.50, elite +10%.
+- **Enemy abilities** on hard/abyss: slimes charge-dash at close range; vines fire green thorn projectiles.
+- **Abyss double wave**: after clearing the first night wave, a second wave at 70% strength spawns before dawn.
+- **Boss multi-phase attacks**: at 66% / 33% HP the Pumpkin King summons and fires 8 / 12 radial seed bursts; attack cooldown drops with phase.
+- `--shot=abyss` scenario; selftest covers abyss stats, charge, thorns, second wave and radial burst.
+
+### Changed
+
+- Title difficulty cycle now covers four levels; HUD label adds 深渊模式.
+- Difficulty arrays extended; default remains 困难.
+
 ## v2.3.0 — 2026-10-30
 
 ### Added
@@ -218,7 +233,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.3.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.4.0...main
+[v2.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.0
 [v2.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.3.0
 [v2.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.2.0
 [v2.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.1.0

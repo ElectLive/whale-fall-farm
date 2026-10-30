@@ -79,6 +79,7 @@ var phase_total := 1.0
 var night_queue: Array[String] = []
 var spawn_timer := 0.0
 var enrage_done := false
+var second_wave_done := false
 var run_active := false
 var endless := false
 var daily_mode := false
@@ -610,7 +611,11 @@ func _process(delta: float) -> void:
 			_flee_enemies()
 			_end_night()
 		elif night_queue.is_empty() and enemies.is_empty() and phase_time < phase_total - 1.0 and not boss_ending:
-			_end_night()
+			if SaveGame.difficulty >= 3 and not second_wave_done:
+				second_wave_done = true
+				_spawn_second_wave()
+			else:
+				_end_night()
 	if run_active and state in [State.DAY, State.NIGHT]:
 		_update_hud(false)
 	_update_mouse_hover()
@@ -728,6 +733,7 @@ func start_night() -> void:
 	_clear_shots()
 	hud.hide_boss()
 	night_queue.clear()
+	second_wave_done = false
 	var plan := GameData.night_plan(day)
 	if biome == "mist":
 		plan.append({"kind": "slime", "count": 1})
@@ -792,6 +798,19 @@ func _spawn_enemy(kind: String) -> Enemy:
 	return _spawn_enemy_at(kind, _edge_position())
 
 
+func _spawn_second_wave() -> void:
+	var plan := GameData.night_plan(day)
+	for entry in plan:
+		entry["count"] = maxi(1, roundi(float(entry["count"]) * 0.7))
+		for i in range(int(entry["count"])):
+			night_queue.append(String(entry["kind"]))
+	night_queue.shuffle()
+	spawn_timer = 0.35
+	hud.banner("第二波潮水！", Color("#b18cff"), 1.6)
+	Audio.sfx("horn", 0.75, -2.0)
+	burst(Vector2(120, 70), Color("#9a8fe0"), 20)
+
+
 func _spawn_enemy_at(kind: String, pos: Vector2) -> Enemy:
 	var e := Enemy.new()
 	e.setup(kind, pos, self, GameData.hp_scale(day))
@@ -815,6 +834,33 @@ func boss_shoot(b: Enemy) -> void:
 	entities.add_child(shot)
 	shot.add_to_group("seed_shots")
 	Audio.sfx("seed", 0.9, -5.0)
+
+
+func boss_radial(b: Enemy, count: int) -> void:
+	if player == null or player.dead or not is_instance_valid(b):
+		return
+	for i in range(count):
+		var angle := TAU * float(i) / float(count)
+		var shot := SeedShot.new()
+		shot.setup(b.position + Vector2(0, -10), Vector2.RIGHT.rotated(angle), self)
+		shot.speed = 40.0
+		entities.add_child(shot)
+		shot.add_to_group("seed_shots")
+	hud.banner("南瓜王进入了第 %d 阶段！" % (b.boss_phase + 1), Color("#ff9a5c"), 1.1)
+	Audio.sfx("boss_roar", 0.8, -4.0)
+	burst(b.position, Color("#e8893a"), 18)
+
+
+func enemy_shoot(e: Enemy) -> void:
+	if player == null or player.dead or not is_instance_valid(e):
+		return
+	var aim := (player.position - e.position).normalized()
+	var shot := SeedShot.new()
+	shot.setup(e.position + Vector2(0, -4), aim, self)
+	shot.thorn = true
+	entities.add_child(shot)
+	shot.add_to_group("seed_shots")
+	Audio.sfx("hit", 0.7, -8.0)
 
 
 func boss_summon(b: Enemy) -> void:
@@ -1841,6 +1887,25 @@ func setup_shot(name: String) -> void:
 			_spawn_enemy_at("gull", Vector2(190, 70))
 			phase_time = 50.0
 			_update_hud(true)
+		"abyss":
+			SaveGame.difficulty = 3
+			start_new_run(20261029)
+			day = 6
+			gold = 20
+			start_night()
+			night_queue.clear()
+			player.position = farm.tile_center(Vector2i(5, 5))
+			player.facing = Vector2.UP
+			player.invuln = 99.0
+			_spawn_enemy_at("slime", Vector2(76, 94))
+			_spawn_enemy_at("vine", Vector2(165, 86))
+			_spawn_boss()
+			if boss != null:
+				boss.position = Vector2(120, 34)
+				boss.boss_phase = 1
+				boss_radial(boss, 8)
+			phase_time = 18.0
+			_update_hud(true)
 		"mouse":
 			start_new_run(20261029)
 			mouse_demo = true
@@ -2303,6 +2368,39 @@ func run_selftest() -> int:
 	start_new_run(4242)
 	_check(gold == 12 and player != null and player.max_hp == 5, "hard mode starts with 5 hp and 12 gold")
 	SaveGame.difficulty = 1
+
+	# abyss mode: 4th difficulty, enemy abilities, second wave
+	_check(GameData.DIFFICULTY_NAMES.size() == 4, "four difficulty levels exist")
+	SaveGame.difficulty = 3
+	start_new_run(4242)
+	_check(gold == 8 and player != null and player.max_hp == 4, "abyss starts with 4 hp and 8 gold")
+	var slime_test := Enemy.new()
+	slime_test.setup("slime", player.position + Vector2(12, 0), self, 1.0)
+	entities.add_child(slime_test)
+	slime_test.dash_cd = 0.0
+	slime_test._slime_behaviour(0.05, player)
+	_check(slime_test.dash_time > 0.0, "abyss slime charges")
+	slime_test.queue_free()
+	var vine_test := Enemy.new()
+	vine_test.setup("vine", player.position + Vector2(60, 0), self, 1.0)
+	entities.add_child(vine_test)
+	vine_test.shoot_cd = 0.0
+	vine_test._vine_behaviour(0.05, player)
+	_check(get_tree().get_nodes_in_group("seed_shots").size() > 0, "abyss vine shoots thorns")
+	_clear_shots()
+	vine_test.queue_free()
+	start_night()
+	night_queue.clear()
+	_spawn_second_wave()
+	_check(night_queue.size() > 0, "abyss night has a second wave")
+	_clear_shots()
+	_spawn_boss()
+	if boss != null:
+		boss_radial(boss, 8)
+		_check(get_tree().get_nodes_in_group("seed_shots").size() >= 8, "boss phase fires a radial burst")
+	_clear_shots()
+	SaveGame.difficulty = 1
+	start_new_run(4242)
 
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day

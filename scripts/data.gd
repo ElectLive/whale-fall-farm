@@ -6,7 +6,7 @@ const TILE := 16
 const FARM_W := 15
 const FARM_H := 8
 const WIN_DAY := 7
-const DIFFICULTY_NAMES := ["休闲", "标准", "困难"]
+const DIFFICULTY_NAMES := ["休闲", "标准", "困难", "深渊"]
 
 const CROPS := {
 	"radish": {
@@ -156,43 +156,43 @@ static func speed_scale(day: int) -> float:
 
 
 static func diff_index() -> int:
-	return clampi(int(SaveGame.difficulty), 0, 2)
+	return clampi(int(SaveGame.difficulty), 0, 3)
 
 
 static func diff_hp() -> float:
-	return [0.9, 1.0, 1.35][diff_index()]
+	return [0.9, 1.0, 1.35, 1.55][diff_index()]
 
 
 static func diff_speed() -> float:
-	return [0.95, 1.0, 1.3][diff_index()]
+	return [0.95, 1.0, 1.3, 1.45][diff_index()]
 
 
 static func diff_count() -> float:
-	return [0.85, 1.0, 1.45][diff_index()]
+	return [0.85, 1.0, 1.45, 1.8][diff_index()]
 
 
 static func diff_spawn() -> float:
-	return [1.15, 1.0, 0.75][diff_index()]
+	return [1.15, 1.0, 0.75, 0.62][diff_index()]
 
 
 static func diff_gull() -> float:
-	return [1.3, 1.0, 0.65][diff_index()]
+	return [1.3, 1.0, 0.65, 0.5][diff_index()]
 
 
 static func diff_invuln() -> float:
-	return [1.1, 1.0, 0.65][diff_index()]
+	return [1.1, 1.0, 0.65, 0.5][diff_index()]
 
 
 static func diff_elite_bonus() -> float:
-	return [0.0, 0.0, 0.05][diff_index()]
+	return [0.0, 0.0, 0.05, 0.10][diff_index()]
 
 
 static func starting_gold() -> int:
-	return [22, 18, 12][diff_index()]
+	return [22, 18, 12, 8][diff_index()]
 
 
 static func starting_hp() -> int:
-	return [7, 6, 5][diff_index()]
+	return [7, 6, 5, 4][diff_index()]
 
 
 static func seed_pack() -> Array:

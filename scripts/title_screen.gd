@@ -69,9 +69,11 @@ func _build() -> void:
 	_diff_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_diff_btn.pressed.connect(_cycle_difficulty)
 	add_child(_diff_btn)
-	var diff_hint := UiKit.label("点此切换 · 敌人强度 / 夜潮密度", 13, Color(0.72, 0.8, 0.9, 0.75))
+	var diff_hint := UiKit.label("点此切换 · 敌人强度 / 夜潮密度", 13, Color(0.78, 0.84, 0.92, 0.9))
 	diff_hint.position = Vector2(440, 350)
-	diff_hint.size = Vector2(220, 20)
+	diff_hint.size = Vector2(240, 20)
+	diff_hint.add_theme_color_override("font_outline_color", Color("#101624"))
+	diff_hint.add_theme_constant_override("outline_size", 4)
 	add_child(diff_hint)
 
 	var daily := UiKit.button("每日挑战", 24)
@@ -107,7 +109,7 @@ func _build() -> void:
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v2.3.0 · 默认困难 · 敌人更快更密", 17, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v2.4.0 · 深渊模式 · 冲锋 / 远程 / 双波", 17, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -163,7 +165,7 @@ func _toggle_help() -> void:
 
 
 func _cycle_difficulty() -> void:
-	SaveGame.difficulty = (int(SaveGame.difficulty) + 1) % 3
+	SaveGame.difficulty = (int(SaveGame.difficulty) + 1) % GameData.DIFFICULTY_NAMES.size()
 	SaveGame.save_data()
 	_diff_btn.text = "难度：%s" % GameData.DIFFICULTY_NAMES[GameData.diff_index()]
 	Audio.sfx("click")

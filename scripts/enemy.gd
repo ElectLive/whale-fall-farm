@@ -31,6 +31,9 @@ var shoot_cd := 2.2
 var sprite_size := 16
 var hop_clock := 0.8
 var leap_time := 0.0
+var dash_cd := 1.5
+var dash_time := 0.0
+var dash_dir := Vector2.ZERO
 
 
 func setup(enemy_kind: String, at: Vector2, game_ref: Node, hp_mult: float = 1.0) -> void:
@@ -106,6 +109,10 @@ func _physics_process(delta: float) -> void:
 	var desired := Vector2.ZERO
 	if is_boss:
 		desired = _boss_behaviour(delta)
+	elif kind == "slime":
+		desired = _slime_behaviour(delta, player)
+	elif kind == "vine":
+		desired = _vine_behaviour(delta, player)
 	elif kind == "frog":
 		desired = _frog_behaviour(delta)
 	elif kind == "crow" or kind == "gull":
@@ -137,6 +144,34 @@ func _physics_process(delta: float) -> void:
 		player.hurt(damage, self)
 
 
+func _slime_behaviour(delta: float, player: Player) -> Vector2:
+	var to_player: Vector2 = player.global_position - global_position
+	if dash_time > 0.0:
+		dash_time -= delta
+		return dash_dir * speed * 3.2
+	if GameData.diff_index() >= 2 and to_player.length() < 78.0:
+		dash_cd -= delta
+		if dash_cd <= 0.0:
+			dash_cd = 2.6 if GameData.diff_index() >= 3 else 3.2
+			dash_time = 0.30
+			dash_dir = to_player.normalized()
+			return dash_dir * speed * 1.2
+	if to_player.length() < 4.0:
+		return Vector2.ZERO
+	return to_player.normalized() * speed
+
+
+func _vine_behaviour(delta: float, player: Player) -> Vector2:
+	var to_player: Vector2 = player.global_position - global_position
+	shoot_cd -= delta
+	if GameData.diff_index() >= 2 and shoot_cd <= 0.0 and to_player.length() < 150.0 and to_player.length() > 36.0:
+		shoot_cd = 2.8 if GameData.diff_index() >= 3 else 3.6
+		game.enemy_shoot(self)
+	if to_player.length() < 12.0:
+		return Vector2.ZERO
+	return to_player.normalized() * speed
+
+
 func _frog_behaviour(delta: float) -> Vector2:
 	if leap_time > 0.0:
 		leap_time -= delta
@@ -166,14 +201,18 @@ func _boss_behaviour(delta: float) -> Vector2:
 			queue_redraw()
 	shoot_cd -= delta
 	if shoot_cd <= 0.0:
-		shoot_cd = 3.2
+		shoot_cd = maxf(1.4, 3.2 - boss_phase * 0.6)
 		game.boss_shoot(self)
 	if boss_phase == 0 and hp <= max_hp * 0.66:
 		boss_phase = 1
 		game.boss_summon(self)
+		game.boss_radial(self, 8)
+		shoot_cd = minf(shoot_cd, 1.2)
 	elif boss_phase == 1 and hp <= max_hp * 0.33:
 		boss_phase = 2
 		game.boss_summon(self)
+		game.boss_radial(self, 12)
+		shoot_cd = 0.6
 	return desired
 
 

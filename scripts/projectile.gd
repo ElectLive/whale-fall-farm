@@ -10,6 +10,7 @@ var ttl := 3.6
 var game: Node
 var sprite: Sprite2D
 var _spin := 0.0
+var thorn := false
 
 
 func setup(at: Vector2, towards: Vector2, game_ref: Node) -> void:
@@ -23,6 +24,11 @@ func _ready() -> void:
 	sprite = Sprite2D.new()
 	sprite.texture = TEX
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if thorn:
+		sprite.modulate = Color(0.55, 1.0, 0.55)
+		scale = Vector2(0.7, 0.7)
+		speed = 74.0
+		ttl = 2.6
 	add_child(sprite)
 
 
@@ -38,5 +44,5 @@ func _process(delta: float) -> void:
 		return
 	if position.distance_to(game.player.position) < 7.0:
 		game.player.hurt(1, self)
-		game.burst(position, Color("#e8893a"), 6)
+		game.burst(position, Color("#7ee3a0") if thorn else Color("#e8893a"), 6)
 		queue_free()
