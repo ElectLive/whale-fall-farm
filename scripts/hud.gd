@@ -306,10 +306,11 @@ func set_day(day: int, phase_text: String, phase_color: Color) -> void:
 	day_label.text = "第 %d 天" % day
 	phase_label.text = phase_text
 	phase_label.add_theme_color_override("font_color", phase_color)
+	var is_day := phase_text.contains("白天")
 	if _skip_btn:
-		_skip_btn.visible = phase_text == "白天"
+		_skip_btn.visible = is_day
 	if _hint:
-		_hint.text = "左键 镰/收获 · 右键 干活 · 滚轮 选种 · R 收工" if phase_text == "白天" \
+		_hint.text = "左键 镰/收获 · 右键 干活 · 滚轮 选种 · R 收工" if is_day \
 			else "左键 镰 · 右键 移动 · 滚轮 选种 · Esc 暂停"
 
 
