@@ -267,12 +267,14 @@ def stone() -> Image.Image:
 # ---------------------------------------------------------------- player
 def player_frame(direction: int, step: int) -> Image.Image:
     """direction: 0 down, 1 left, 2 right, 3 up. step: 0..3."""
+    if direction == 2:
+        return player_frame(1, step).transpose(Image.FLIP_LEFT_RIGHT)
     im, d = new(16, 24)
     walk = step in (1, 3)
     swing = 1 if step == 1 else (-1 if step == 3 else 0)
     bob = 1 if walk else 0
-    # ground shadow is a separate sprite
-    # legs
+
+    # legs and boots (feet stay on the ground; only the torso bobs)
     if direction in (0, 3):
         left_dy = 1 if step == 1 else 0
         right_dy = 1 if step == 3 else 0
@@ -286,64 +288,82 @@ def player_frame(direction: int, step: int) -> Image.Image:
         box(d, 9 - lead, 19, 10 - lead, 22, C["overall2"])
         box(d, 5 + lead, 22, 7 + lead, 23, C["boot"])
         box(d, 9 - lead, 22, 11 - lead, 23, C["boot"])
-    # body
-    box(d, 5, 12 + bob, 10, 19 + bob, C["overall"])
-    box(d, 4, 13 + bob, 4, 17 + bob, C["shirt"])
-    box(d, 11, 13 + bob, 11, 17 + bob, C["shirt"])
-    # straps
+
+    # torso
+    body_top = 12 + bob
+    body_bottom = 18 + bob
+    box(d, 5, body_top, 10, body_bottom, C["overall"])
+    box(d, 4, body_top, 4, 14 + bob, C["shirt"])
+    box(d, 11, body_top, 11, 14 + bob, C["shirt"])
     if direction != 3:
-        px(d, 6, 12 + bob, C["overall2"])
-        px(d, 9, 12 + bob, C["overall2"])
+        px(d, 6, body_top, C["overall2"])
+        px(d, 9, body_top, C["overall2"])
+        box(d, 6, 15 + bob, 9, 16 + bob, C["overall2"])
         px(d, 7, 15 + bob, C["gold2"])
+    else:
+        box(d, 6, body_top, 9, 14 + bob, C["overall2"])
+
     # arms
     if direction == 0:
-        box(d, 3, 14 + bob, 4, 17 + bob, C["skin"])
-        box(d, 11, 14 + bob + swing, 12, 17 + bob + swing, C["skin"])
+        box(d, 3, 14 + bob, 4, 17 + bob + swing, C["skin"])
+        box(d, 11, 14 + bob, 12, 17 + bob - swing, C["skin"])
     elif direction == 1:
-        box(d, 2, 15 + bob, 4, 17 + bob + swing, C["skin"])
-    elif direction == 2:
-        box(d, 11, 15 + bob, 13, 17 + bob + swing, C["skin"])
+        box(d, 2, 14 + bob, 4, 17 + bob + swing, C["skin"])
+        box(d, 10, 14 + bob, 11, 16 + bob, C["shirt"])
+        box(d, 10, 16 + bob, 11, 17 + bob, C["skin"])
     else:
         box(d, 3, 14 + bob, 4, 16 + bob, C["skin"])
         box(d, 11, 14 + bob, 12, 16 + bob, C["skin"])
-    # head
-    head_y = 4 + bob
+
+    # head: hair row under the brim is deliberate; it closes the old gap
+    hair_top = 5 + bob
+    skin_top = 6 + bob
+    chin = 12 + bob
     if direction == 0:
-        box(d, 4, head_y + 2, 11, head_y + 8, C["skin"])
-        box(d, 4, head_y + 7, 11, head_y + 8, C["skin2"])
-        # hair fringe + side locks
-        box(d, 3, head_y + 1, 4, head_y + 7, C["hair"])
-        box(d, 11, head_y + 1, 12, head_y + 7, C["hair"])
-        box(d, 4, head_y + 2, 7, head_y + 3, C["hair"])
-        px(d, 6, head_y + 4, C["ink"])
-        px(d, 9, head_y + 4, C["ink"])
-        px(d, 5, head_y + 5, (233, 156, 150, 255))
-        px(d, 10, head_y + 5, (233, 156, 150, 255))
-    elif direction == 3:
-        box(d, 4, head_y + 2, 11, head_y + 8, C["hair"])
-        box(d, 3, head_y + 3, 4, head_y + 8, C["hair2"])
-        box(d, 11, head_y + 3, 12, head_y + 8, C["hair2"])
-        box(d, 5, head_y + 2, 10, head_y + 4, C["hair2"])
+        box(d, 4, skin_top, 11, chin, C["skin"])
+        box(d, 4, chin, 11, chin, C["skin2"])
+        box(d, 3, hair_top, 4, 10 + bob, C["hair"])
+        box(d, 11, hair_top, 12, 10 + bob, C["hair"])
+        box(d, 4, hair_top, 11, hair_top, C["hair"])
+        px(d, 4, skin_top, C["hair"])
+        px(d, 5, skin_top, C["hair"])
+        px(d, 10, skin_top, C["hair"])
+        px(d, 11, skin_top, C["hair"])
+        px(d, 6, 8 + bob, C["ink"])
+        px(d, 9, 8 + bob, C["ink"])
+        px(d, 5, 9 + bob, (233, 156, 150, 255))
+        px(d, 10, 9 + bob, (233, 156, 150, 255))
+        px(d, 8, 9 + bob, C["skin2"])
+        box(d, 7, 10 + bob, 8, 10 + bob, C["skin2"])
     elif direction == 1:
-        box(d, 3, head_y + 2, 10, head_y + 8, C["skin"])
-        box(d, 9, head_y + 1, 11, head_y + 8, C["hair"])
-        box(d, 3, head_y + 1, 4, head_y + 6, C["hair"])
-        px(d, 5, head_y + 4, C["ink"])
-        px(d, 3, head_y + 5, (233, 156, 150, 255))
+        box(d, 4, skin_top, 10, chin, C["skin"])
+        box(d, 4, chin, 10, chin, C["skin2"])
+        box(d, 9, hair_top, 12, 11 + bob, C["hair"])
+        box(d, 3, hair_top, 4, 10 + bob, C["hair"])
+        box(d, 4, hair_top, 11, hair_top, C["hair"])
+        px(d, 4, skin_top, C["hair"])
+        px(d, 5, skin_top, C["hair"])
+        px(d, 6, 8 + bob, C["ink"])
+        px(d, 5, 9 + bob, (233, 156, 150, 255))
+        px(d, 4, 8 + bob, C["skin2"])
     else:
-        box(d, 5, head_y + 2, 12, head_y + 8, C["skin"])
-        box(d, 4, head_y + 1, 6, head_y + 8, C["hair"])
-        box(d, 11, head_y + 1, 12, head_y + 6, C["hair"])
-        px(d, 10, head_y + 4, C["ink"])
-        px(d, 12, head_y + 5, (233, 156, 150, 255))
-    # straw hat
-    hy = head_y - 2
-    box(d, 3, hy + 2, 12, hy + 2, C["straw2"])
-    box(d, 4, hy + 1, 11, hy + 1, C["straw"])
-    box(d, 5, hy - 1, 10, hy + 1, C["straw"])
-    box(d, 5, hy, 10, hy, C["straw2"])
-    px(d, 7, hy + 1, C["red"])
-    px(d, 8, hy + 1, C["red"])
+        box(d, 4, skin_top, 11, chin, C["hair"])
+        box(d, 3, hair_top, 4, 11 + bob, C["hair2"])
+        box(d, 11, hair_top, 12, 11 + bob, C["hair2"])
+        box(d, 4, hair_top, 11, hair_top, C["hair"])
+        box(d, 5, skin_top, 10, skin_top, C["hair2"])
+
+    # straw hat: trapezoid crown + two-tier brim, sitting on the hair row
+    hat_base = 4 + bob
+    box(d, 2, hat_base, 13, hat_base, C["straw2"])
+    box(d, 3, hat_base - 1, 12, hat_base - 1, C["straw"])
+    box(d, 6, hat_base - 3, 9, hat_base - 3, C["straw"])
+    box(d, 5, hat_base - 2, 10, hat_base - 2, C["straw"])
+    box(d, 5, hat_base - 1, 10, hat_base - 1, C["straw2"])
+    px(d, 7, hat_base - 1, C["red"])
+    px(d, 8, hat_base - 1, C["red"])
+    px(d, 4, hat_base, C["straw"])
+    px(d, 11, hat_base, C["straw"])
     return im
 
 

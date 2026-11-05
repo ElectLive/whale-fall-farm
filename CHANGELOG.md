@@ -3,6 +3,19 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.4.1 — 2026-10-30
+
+### Fixed
+
+- Player sprite had a transparent 1px row between the straw hat brim and the head in every direction. The hat now sits directly on a full hair row; all 16 frames are gap-free.
+
+### Changed
+
+- Redrew the 16×24 player across 4 directions × 4 walk frames: trapezoid hat crown, two-tier brim, red hat band, side bangs, nose/mouth, cleaner overalls and boots.
+- Right-facing frames are mirrored from the left to keep the profile consistent.
+- Added `docs/player_redraw.png` four-direction preview.
+- Pixel check: zero transparent pixels in the hat/head seam for all 16 frames.
+
 ## v2.4.0 — 2026-10-30
 
 ### Added
@@ -233,7 +246,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.4.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.4.1...main
+[v2.4.1]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.1
 [v2.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.0
 [v2.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.3.0
 [v2.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.2.0

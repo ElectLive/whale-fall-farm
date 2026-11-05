@@ -15,6 +15,7 @@
 ![鼠标交互](screenshots/shot_mouse.png)
 ![白天活动](screenshots/shot_daylife.png)
 ![深渊](screenshots/shot_abyss.png)
+![玩家重绘](docs/player_redraw.png)
 ![南瓜王](screenshots/shot_boss.png)
 
 ## 玩法
@@ -100,8 +101,8 @@
 
 到 [Releases](https://github.com/ElectLive/whale-fall-farm/releases) 下载最新版：
 
-- Windows：`WhaleFallFarm-v2.4.0-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
-- Android：`WhaleFallFarm-v2.4.0-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
+- Windows：`WhaleFallFarm-v2.4.1-win64.zip` — 解压双击 `WhaleFallFarm.exe`，绿色免安装，存档在 exe 旁边。
+- Android：`WhaleFallFarm-v2.4.1-android.apk` — Android 7.0+ / arm64，允许「安装未知来源应用」即可安装。APK 使用调试证书签名，适合直接安装试玩，不适合上架应用商店。
 
 ## 从源码运行
 
@@ -213,6 +214,7 @@ docs/
 - **v2.2.0** — 左键攻击/收获，右键移动/松土/播种/浇水；白天新增偷菜海鸥、贝壳/海星采集、R/「结束白天」提前收工（作物按剩余时间生长）。
 - **v2.3.0** — 三档难度（默认困难）：困难模式敌人生命/速度/数量全面上调、刷怪更快、海鸥更频繁、初始 5 血 12 金、无敌帧更短；标题界面可切。
 - **v2.4.0** — 第四档「深渊」：4 血 8 金、敌人 ×1.55 生命/×1.45 速度/×1.80 数量；史莱姆冲锋、缠根怪远程棘刺、深渊夜晚双波；Boss 66%/33% 血量环形弹幕与更快射速。
+- **v2.4.1** — 玩家贴图重绘：帽子/头发/头部重新衔接，填掉帽檐和头之间的透明空隙；四方向四帧全部重画，加刘海、鼻嘴、帽带和梯形帽冠。
 
 ## 20 次更新记录
 
