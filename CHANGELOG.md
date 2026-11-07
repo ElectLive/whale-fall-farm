@@ -3,6 +3,22 @@
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
+## v2.5.0 — 2026-10-30
+
+### Added
+
+- **Farm resonance**: every crop contributes 1 (growing), 2 (mature) or 3 (golden), cap 30. Every 8 points gives +1 scythe damage and every point gives +1% attack speed (cap 25%).
+- **Harvest aftermath**: harvesting grants 6s of +1 damage / +12% attack speed and refills tide energy; crop-specific effects: pumpkin shield, star heal, moonwheat night damage, chili 48px AoE, radish energy.
+- **Tide energy & three skills**: Q 旋风斩 (25 energy, 7s), X/Shift 潮汐冲刺 (20, 5s), C 丰收守护 (30, 12s; heal + 2 shield). Energy starts at 45, max 100, gained from harvests/kills/time.
+- **Derp pet 呆瓜**: follows the farmer; digs gold or seeds every 6s in the day, bonks nearby monsters for 1 damage + knockback every 4.5s at night.
+- HUD skill panel (energy bar, cooldowns, resonance/shield status), mobile 旋/冲/守 buttons, derp label, new derp sprite.
+
+### Changed
+
+- `aspd_mult` and scythe damage now include resonance/harvest/moon buffs.
+- Player has shield and dash states; shield blocks damage before HP.
+- Selftest covers skills, resonance, harvest buff and derp bonk.
+
 ## v2.4.1 — 2026-10-30
 
 ### Fixed
@@ -246,7 +262,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.4.1...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.5.0...main
+[v2.5.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.5.0
 [v2.4.1]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.1
 [v2.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.0
 [v2.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.3.0

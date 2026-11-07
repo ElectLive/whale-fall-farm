@@ -37,11 +37,16 @@ var pause_screen: PauseScreen
 
 var player: Player
 var pet: PetWhale
+var derp: DerpPet
 var enemies: Array[Enemy] = []
 var crops: Array[Crop] = []
 var forages: Array[Forage] = []
 var forage_timer := 0.0
 var day_gull_timer := 0.0
+var skill_energy := 45.0
+var skill_cd: Array[float] = [0.0, 0.0, 0.0]
+var harvest_buff_t := 0.0
+var moon_buff_t := 0.0
 var relic_ids: Array[String] = []
 var boss: Enemy = null
 var boss_ending := false
@@ -317,6 +322,7 @@ func _enable_mobile() -> void:
 	mobile.pause_pressed.connect(func() -> void:
 		if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
 			_toggle_pause())
+	mobile.skill_pressed.connect(use_skill)
 	hud.set_mobile(true)
 	mobile.set_active(false)
 
@@ -387,6 +393,11 @@ func start_new_run(seed_value: int = 0) -> void:
 	stormy = false
 	fog_rect.color.a = 0.0
 	lightning_rect.color.a = 0.0
+	skill_energy = 45.0
+	for i in range(3):
+		skill_cd[i] = 0.0
+	harvest_buff_t = 0.0
+	moon_buff_t = 0.0
 	relic_ids.clear()
 	mods = _fresh_mods()
 	boss = null
@@ -425,6 +436,11 @@ func start_new_run(seed_value: int = 0) -> void:
 	entities.add_child(pet)
 	hud.set_pet_level(1)
 
+	derp = DerpPet.new()
+	derp.setup(self)
+	derp.position = player.position + Vector2(20, 14)
+	entities.add_child(derp)
+
 	state = State.DAY
 	day_setup()
 	Audio.play_music("day")
@@ -458,6 +474,9 @@ func _clear_run() -> void:
 	if pet != null and is_instance_valid(pet):
 		pet.queue_free()
 	pet = null
+	if derp != null and is_instance_valid(derp):
+		derp.queue_free()
+	derp = null
 	for child in fx.get_children():
 		child.queue_free()
 	night_queue.clear()
@@ -547,7 +566,27 @@ func move_mult() -> float:
 
 
 func aspd_mult() -> float:
-	return float(mods["aspd"])
+	var resonance := 1.0 + minf(0.25, float(farm_resonance()) * 0.01)
+	var harvest := 1.12 if harvest_buff_t > 0.0 else 1.0
+	return float(mods["aspd"]) * resonance * harvest
+
+
+func farm_resonance() -> int:
+	var n := 0
+	for c in crops:
+		if not is_instance_valid(c):
+			continue
+		if c.golden:
+			n += 3
+		elif c.mature:
+			n += 2
+		else:
+			n += 1
+	return mini(30, n)
+
+
+func resonance_damage_bonus() -> int:
+	return mini(3, farm_resonance() / 8)
 
 
 func growth_mult() -> float:
@@ -558,12 +597,66 @@ func range_mult() -> float:
 	return float(mods["range"])
 
 
+func use_skill(index: int) -> void:
+	if not can_control() or player == null or player.dead:
+		return
+	if index < 0 or index >= 3:
+		return
+	if skill_cd[index] > 0.0:
+		float_text("冷却中 %.1fs" % skill_cd[index], player.position + Vector2(0, -30), Color("#9fb0c8"), 8)
+		return
+	var costs := [25.0, 20.0, 30.0]
+	if skill_energy < costs[index]:
+		float_text("潮汐能量不足", player.position + Vector2(0, -30), Color("#e2556b"), 8)
+		Audio.sfx("click", 0.6)
+		return
+	skill_energy -= costs[index]
+	match index:
+		0:
+			skill_cd[0] = 7.0
+			var dmg := 2 + resonance_damage_bonus()
+			for e in enemies.duplicate():
+				if is_instance_valid(e) and not e.dead and e.global_position.distance_to(player.position) <= 52.0:
+					e.take_damage(dmg, e.global_position - player.position)
+			burst(player.position, Color("#f2c94c"), 22)
+			shake(5.0)
+			Audio.sfx("explosion", 0.65, -5.0)
+			float_text("旋风斩！", player.position + Vector2(0, -30), Color("#f2c94c"), 11)
+		1:
+			skill_cd[1] = 5.0
+			var dir := player.facing
+			if not is_mobile:
+				dir = (get_global_mouse_position() - player.position).normalized()
+				if dir.length() < 0.1:
+					dir = player.facing
+			player.start_dash(dir)
+			burst(player.position, Color("#7ee3d4"), 12)
+			Audio.sfx("water", 1.3, -5.0)
+			float_text("潮汐冲刺", player.position + Vector2(0, -30), Color("#7ee3d4"), 9)
+		2:
+			skill_cd[2] = 12.0
+			player.heal(1)
+			player.add_shield(2, 9.0)
+			burst(player.position, Color("#8fe0b0"), 14)
+			Audio.sfx("buy", 1.15, -4.0)
+			float_text("丰收守护", player.position + Vector2(0, -30), Color("#8fe0b0"), 10)
+	_update_hud(true)
+
+
+func _skill_name(index: int) -> String:
+	return ["旋风斩", "潮汐冲刺", "丰收守护"][clampi(index, 0, 2)]
+
+
 func enemy_speed_mult() -> float:
 	return float(mods["slow"]) * GameData.speed_scale(day)
 
 
 func is_night_phase() -> bool:
 	return state == State.NIGHT
+
+
+func is_day_phase() -> bool:
+	return state == State.DAY
 
 
 func is_raining() -> bool:
@@ -576,6 +669,12 @@ func _is_boss_night(d: int) -> bool:
 
 func _process(delta: float) -> void:
 	_tick_shake(delta)
+	if state == State.DAY or state == State.NIGHT:
+		harvest_buff_t = maxf(0.0, harvest_buff_t - delta)
+		moon_buff_t = maxf(0.0, moon_buff_t - delta)
+		for i in range(3):
+			skill_cd[i] = maxf(0.0, skill_cd[i] - delta)
+		skill_energy = minf(100.0, skill_energy + delta * (2.0 if state == State.DAY else 1.4))
 	if stormy and state == State.DAY:
 		lightning_t -= delta
 		if lightning_t <= 0.0:
@@ -695,6 +794,46 @@ func collect_forage(f: Forage) -> void:
 	burst(f.position, Color("#f2c94c"), 6)
 	f.queue_free()
 	_update_hud(true)
+
+
+func derp_dig(p: DerpPet) -> void:
+	if state != State.DAY or p == null:
+		return
+	if rng.randf() < 0.7:
+		var amount := rng.randi_range(1, 3)
+		gold += amount
+		run_gold += amount
+		day_gold += amount
+		float_text("+%d 金" % amount, p.position + Vector2(0, -12), Color("#f2c94c"), 8)
+		Audio.sfx("coin", 0.9, -6.0)
+	else:
+		var id: String = GameData.CROP_ORDER[rng.randi_range(0, GameData.CROP_ORDER.size() - 1)]
+		seeds[id] = int(seeds[id]) + 1
+		_seeds_dirty = true
+		float_text("+%s种子" % GameData.CROPS[id]["name"], p.position + Vector2(0, -12), Color("#8fe0b0"), 8)
+	burst(p.position, Color("#e8c99a"), 6)
+	_update_hud(true)
+
+
+func derp_bonk(p: DerpPet) -> void:
+	if state != State.NIGHT or p == null:
+		return
+	var best: Enemy = null
+	var best_d := 54.0
+	for e in enemies:
+		if not is_instance_valid(e) or e.dead:
+			continue
+		var d: float = p.position.distance_to(e.global_position)
+		if d < best_d:
+			best_d = d
+			best = e
+	if best == null:
+		return
+	best.take_damage(1, best.global_position - p.position)
+	best.knock += (best.global_position - p.position).normalized() * 7.0
+	float_text("呆瓜！", p.position + Vector2(0, -18), Color("#e8c99a"), 9)
+	burst(best.global_position, Color("#e8c99a"), 5)
+	Audio.sfx("hit", 1.3, -8.0)
 
 
 func skip_day() -> void:
@@ -1181,6 +1320,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not can_control():
 		return
 	match event.keycode:
+		KEY_Q:
+			use_skill(0)
+		KEY_SHIFT:
+			use_skill(1)
+		KEY_X:
+			use_skill(1)
+		KEY_C:
+			use_skill(2)
 		KEY_E:
 			interact()
 		KEY_1:
@@ -1594,6 +1741,30 @@ func on_crop_harvested(c: Crop) -> void:
 		seeds[c.kind] = int(seeds[c.kind]) + 1
 		float_text("+1 种子", c.position + Vector2(0, -20), Color("#8fe0b0"), 8)
 		_seeds_dirty = true
+	# Farming -> combat: harvest fills the tide meter and grants a short buff.
+	harvest_buff_t = maxf(harvest_buff_t, 6.0)
+	var energy_gain := 10 + int(c.value) / 5
+	if c.golden:
+		energy_gain *= 2
+	skill_energy = minf(100.0, skill_energy + energy_gain)
+	match String(c.kind):
+		"pumpkin":
+			if player:
+				player.add_shield(1, 10.0)
+				float_text("南瓜护盾", player.position + Vector2(0, -28), Color("#e8893a"), 8)
+		"star":
+			if player:
+				player.heal(1)
+				float_text("星露回复", player.position + Vector2(0, -28), Color("#7ee3d4"), 8)
+		"moonwheat":
+			moon_buff_t = maxf(moon_buff_t, 10.0)
+			float_text("月光强化", player.position + Vector2(0, -28), Color("#cfe8b0"), 8)
+		"chili":
+			for e in enemies.duplicate():
+				if is_instance_valid(e) and not e.dead and e.global_position.distance_to(c.position) <= 48.0:
+					e.take_damage(2, e.global_position - c.position)
+			burst(c.position, Color("#e2556b"), 14)
+			float_text("辣椒爆香", c.position + Vector2(0, -26), Color("#e2556b"), 8)
 	_update_hud(true)
 
 
@@ -1617,9 +1788,13 @@ func crow_eat_crop(_crow: Enemy, c: Crop) -> void:
 # ------------------------------------------------------------------ combat
 func player_attack(p: Player, dir: Vector2) -> void:
 	var reach := (26.0 + 6.0) * range_mult()
-	var dmg := int(round(float(mods["dmg"])))
+	var dmg := int(round(float(mods["dmg"]))) + resonance_damage_bonus()
+	if harvest_buff_t > 0.0:
+		dmg += 1
 	if state == State.NIGHT:
 		dmg += int(mods["night_dmg"])
+		if moon_buff_t > 0.0:
+			dmg += 1
 	var crit := rng.randf() < float(mods["crit_chance"])
 	if crit:
 		dmg *= 2
@@ -1656,6 +1831,7 @@ func on_enemy_died(e: Enemy) -> void:
 	enemies.erase(e)
 	kills += 1
 	day_kills += 1
+	skill_energy = minf(100.0, skill_energy + 4.0)
 	SaveGame.enemies_killed += 1
 	if SaveGame.enemies_killed >= 50:
 		_unlock("kill_50")
@@ -1786,6 +1962,8 @@ func _update_hud(force: bool) -> void:
 		_seeds_dirty = false
 	hud.set_gold(gold)
 	hud.set_relic_count(relic_ids.size())
+	hud.set_skills(skill_energy, skill_cd, player.shield if player else 0,
+		farm_resonance(), harvest_buff_t, moon_buff_t)
 	if state == State.DAY or state == State.NIGHT or state == State.PAUSED:
 		var night := state == State.NIGHT
 		var phase_text := "夜晚" if night else "白天"
@@ -2055,6 +2233,7 @@ func run_selftest() -> int:
 	_check(farm.tiles.size() == GameData.FARM_W * GameData.FARM_H, "farm grid size")
 	_check(player != null, "player spawned")
 	_check(pet != null, "pet whale spawned")
+	_check(derp != null, "derp pet spawned")
 	_check(Engine.max_fps == 60, "fps cap is 60")
 	_check(gold == 18, "starting gold is 18")
 	SaveGame.difficulty = 2
@@ -2111,6 +2290,26 @@ func run_selftest() -> int:
 	pending_active = false
 	player.stop_moving()
 
+	# skills consume tide energy and go on cooldown
+	skill_energy = 100.0
+	for i in range(3):
+		skill_cd[i] = 0.0
+	use_skill(0)
+	_check(skill_energy < 100.0 and skill_cd[0] > 0.0, "whirlwind spends energy and starts cooldown")
+	skill_cd[1] = 0.0
+	use_skill(1)
+	_check(player.dash_time > 0.0, "dash skill moves the player")
+	skill_cd[2] = 0.0
+	skill_energy = 100.0
+	use_skill(2)
+	_check(player.shield > 0, "guard skill grants a shield")
+	player.dash_time = 0.0
+	player.shield = 0
+	player.shield_t = 0.0
+	skill_energy = 45.0
+	for i in range(3):
+		skill_cd[i] = 0.0
+
 	# day activities: crop fast-forward, forage, gull raid
 	var adv_test := Crop.new()
 	adv_test.setup("radish", Vector2i(10, 6), farm, self)
@@ -2149,11 +2348,13 @@ func run_selftest() -> int:
 	crop.growth = crop.grow_time
 	crop._process(0.02)
 	_check(crop.mature, "crop matures")
+	_check(farm_resonance() > 0, "planted crops give farm resonance")
 	var gold_before := gold
 	var count_before := crops.size()
 	interact()
 	_check(crops.size() == count_before - 1, "harvest removes crop")
 	_check(gold > gold_before, "harvest pays gold")
+	_check(harvest_buff_t > 0.0, "harvest grants a combat buff")
 	_check(SaveGame.achievements.has("first_harvest"), "first harvest achievement unlocks")
 
 	# moonwheat only grows at night
@@ -2319,6 +2520,14 @@ func run_selftest() -> int:
 	phase_total = 34.0
 	phase_time = 20.0
 	night_queue.clear()
+	# derp pet bonks a nearby monster
+	if derp:
+		derp.position = Vector2(70, 52)
+		var bonk_target := _spawn_enemy_at("slime", Vector2(82, 52))
+		var bonk_hp := bonk_target.hp
+		derp_bonk(derp)
+		_check(bonk_target.hp < bonk_hp, "derp pet bonks nearby monsters")
+		bonk_target.take_damage(999, Vector2.RIGHT)
 	_spawn_boss()
 	_check(boss != null, "boss spawns")
 	_check(hud.boss_panel.visible, "boss hp bar visible")

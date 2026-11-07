@@ -109,7 +109,7 @@ func _build() -> void:
 	best.size = Vector2(620, 30)
 	add_child(best)
 
-	var version := UiKit.label("v2.4.1 · 玩家重绘 · 帽子贴合", 17, Color(0.68, 0.76, 0.86, 0.7))
+	var version := UiKit.label("v2.5.0 · 农田共鸣 / 三技能 / 呆瓜", 17, Color(0.68, 0.76, 0.86, 0.7))
 	version.position = Vector2(720, 680)
 	version.size = Vector2(520, 24)
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
@@ -128,8 +128,8 @@ func _best_text() -> String:
 
 func _build_help() -> PanelContainer:
 	var p := UiKit.panel_container(20)
-	p.position = Vector2(650, 285)
-	p.size = Vector2(580, 340)
+	p.position = Vector2(650, 270)
+	p.size = Vector2(580, 370)
 	p.mouse_filter = Control.MOUSE_FILTER_STOP
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -139,16 +139,17 @@ func _build_help() -> PanelContainer:
 	var lines := [
 		"左键 —— 挥镰 / 收获成熟作物",
 		"右键 —— 点地移动 / 松土 / 播种 / 浇水",
+		"Q / X / C —— 旋风斩 / 潮汐冲刺 / 丰收守护",
 		"滚轮 —— 切换种子 · 右上 Ⅱ 暂停",
-		"R —— 提前结束白天",
-		"WASD / 方向键 —— 移动 · E 互动",
-		"空格 —— 挥镰 · 1-5 选种",
-		"Esc 暂停 · F 全屏",
+		"R —— 提前结束白天 · E —— 互动",
+		"WASD / 方向键 —— 移动 · 空格 —— 挥镰",
+		"1-5 选种 · Esc 暂停 · F 全屏",
 	]
 	if OS.has_feature("mobile"):
 		lines = [
 			"左侧摇杆 —— 走动",
 			"右侧「镰」—— 挥镰（可长按）",
+			"「旋 / 冲 / 守」—— 三个技能",
 			"「互动」—— 松土 / 播种 / 浇水 / 收获",
 			"轻点下方种子栏 —— 切换种子",
 			"右上「Ⅱ」—— 暂停",

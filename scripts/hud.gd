@@ -26,8 +26,13 @@ var seed_counts: Array[Label] = []
 var _seed_keys: Array[Label] = []
 var _hint: Label
 var pet_label: Label
+var derp_label: Label
 var difficulty_label: Label
 var hover_label: Label
+var energy_label: Label
+var energy_bar: ProgressBar
+var status_label: Label
+var skill_labels: Array[Label] = []
 var _pause_btn: Button
 var _skip_btn: Button
 var progress: ProgressBar
@@ -199,21 +204,53 @@ func _build() -> void:
 		seed_panels.append(slot)
 		seed_counts.append(cnt)
 
-	_hint = UiKit.label("左键 镰/收获 · 右键 干活 · 滚轮 选种 · R 收工", 13, Color(0.72, 0.8, 0.9, 0.65))
-	_hint.position = Vector2(940, 671)
-	_hint.size = Vector2(324, 28)
+	_hint = UiKit.label("左键 镰 · 右键 干活 · Q/X/C 技能 · 滚轮 选种", 13, Color(0.72, 0.8, 0.9, 0.65))
+	_hint.position = Vector2(920, 671)
+	_hint.size = Vector2(344, 28)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_hint)
 
 	pet_label = UiKit.label("小鲸鱼 Lv1", 15, Color("#7ee3d4"))
-	pet_label.position = Vector2(22, 578)
+	pet_label.position = Vector2(22, 550)
 	pet_label.size = Vector2(170, 24)
 	add_child(pet_label)
 
+	derp_label = UiKit.label("呆瓜", 15, Color("#e8c99a"))
+	derp_label.position = Vector2(22, 572)
+	derp_label.size = Vector2(80, 24)
+	add_child(derp_label)
+
 	difficulty_label = UiKit.label("困难模式", 14, Color("#e2556b"))
-	difficulty_label.position = Vector2(22, 554)
+	difficulty_label.position = Vector2(22, 528)
 	difficulty_label.size = Vector2(170, 22)
 	add_child(difficulty_label)
+
+	var skill_panel := UiKit.panel_container(8)
+	skill_panel.position = Vector2(16, 132)
+	skill_panel.size = Vector2(250, 104)
+	add_child(skill_panel)
+	var skv := VBoxContainer.new()
+	skv.add_theme_constant_override("separation", 3)
+	skill_panel.add_child(skv)
+	energy_label = UiKit.label("潮汐能量 45/100", 13, Color("#8fd3d6"))
+	skv.add_child(energy_label)
+	energy_bar = ProgressBar.new()
+	energy_bar.min_value = 0
+	energy_bar.max_value = 100
+	energy_bar.value = 45
+	energy_bar.show_percentage = false
+	energy_bar.custom_minimum_size = Vector2(226, 8)
+	skv.add_child(energy_bar)
+	var skill_row := HBoxContainer.new()
+	skill_row.add_theme_constant_override("separation", 4)
+	skv.add_child(skill_row)
+	for i in range(3):
+		var lbl := UiKit.label(["Q 旋风", "X 冲刺", "C 守护"][i], 12, Color("#f6e7b4"))
+		lbl.custom_minimum_size = Vector2(72, 18)
+		skill_row.add_child(lbl)
+		skill_labels.append(lbl)
+	status_label = UiKit.label("共鸣 ×0 · 护盾 0", 12, Color("#9fb0c8"))
+	skv.add_child(status_label)
 
 	hover_label = UiKit.label("", 16, Color("#f6f7fb"))
 	hover_label.position = Vector2(0, 0)
@@ -316,8 +353,8 @@ func set_day(day: int, phase_text: String, phase_color: Color) -> void:
 	if _skip_btn:
 		_skip_btn.visible = is_day
 	if _hint:
-		_hint.text = "左键 镰/收获 · 右键 干活 · 滚轮 选种 · R 收工" if is_day \
-			else "左键 镰 · 右键 移动 · 滚轮 选种 · Esc 暂停"
+		_hint.text = "左键 镰 · 右键 干活 · Q/X/C 技能 · 滚轮 选种" if is_day \
+			else "左键 镰 · 右键 移动 · Q/X/C 技能 · 滚轮 选种"
 
 
 func set_timer(seconds_left: float, total: float, is_night: bool) -> void:
@@ -409,6 +446,26 @@ func set_hover_text(text: String, screen_pos: Vector2) -> void:
 func set_pet_level(level: int) -> void:
 	if pet_label:
 		pet_label.text = "小鲸鱼 Lv%d" % level
+
+
+func set_skills(energy: float, cds: Array, shield: int, resonance: int,
+		harvest_t: float = 0.0, moon_t: float = 0.0) -> void:
+	if energy_bar == null:
+		return
+	energy_bar.value = clampf(energy, 0.0, 100.0)
+	energy_label.text = "潮汐能量 %d/100" % int(energy)
+	var names := ["Q 旋风", "X 冲刺", "C 守护"]
+	for i in range(skill_labels.size()):
+		var cd := float(cds[i]) if i < cds.size() else 0.0
+		skill_labels[i].text = names[i] if cd <= 0.0 else "%s %.1fs" % [names[i], cd]
+		skill_labels[i].add_theme_color_override("font_color",
+			Color("#f6e7b4") if cd <= 0.0 else Color("#6f7f96"))
+	var status := "共鸣 ×%d · 护盾 %d" % [resonance, shield]
+	if harvest_t > 0.0:
+		status += " · 丰收"
+	if moon_t > 0.0:
+		status += " · 月光"
+	status_label.text = status
 
 
 func set_difficulty(idx: int) -> void:

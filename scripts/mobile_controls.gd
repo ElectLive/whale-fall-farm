@@ -7,6 +7,7 @@ signal attack_changed(held: bool)
 signal attack_tap
 signal interact_pressed
 signal pause_pressed
+signal skill_pressed(index: int)
 
 const JOY_CENTER := Vector2(170, 520)
 const JOY_DRAW_RADIUS := 78.0
@@ -20,6 +21,7 @@ var _draw_knob := Vector2.ZERO
 var _attack_btn: Button
 var _interact_btn: Button
 var _pause_btn: Button
+var _skill_buttons: Array[Button] = []
 
 
 func _ready() -> void:
@@ -45,6 +47,18 @@ func _build_buttons() -> void:
 	_pause_btn = _make_round_button("Ⅱ", Vector2(1218, 150), 28, 24, Color("#c8d6e8"))
 	_pause_btn.pressed.connect(func() -> void: pause_pressed.emit())
 	add_child(_pause_btn)
+
+	var skill_info := [
+		["旋", Vector2(1015, 455), 28, Color("#f2c94c"), 0],
+		["冲", Vector2(1085, 415), 28, Color("#7ee3d4"), 1],
+		["守", Vector2(1155, 455), 28, Color("#8fe0b0"), 2],
+	]
+	for info in skill_info:
+		var b := _make_round_button(String(info[0]), Vector2(info[1]), float(info[2]), 18, Color(info[3]))
+		var idx := int(info[4])
+		b.pressed.connect(func() -> void: skill_pressed.emit(idx))
+		add_child(b)
+		_skill_buttons.append(b)
 
 
 func _make_round_button(text: String, center: Vector2, radius: float, font_size: int, accent: Color) -> Button:
@@ -129,6 +143,8 @@ func set_active(on: bool) -> void:
 	_attack_btn.disabled = not on
 	_interact_btn.disabled = not on
 	_pause_btn.disabled = not on
+	for b in _skill_buttons:
+		b.disabled = not on
 	if not on:
 		attack_changed.emit(false)
 		_release_joystick()

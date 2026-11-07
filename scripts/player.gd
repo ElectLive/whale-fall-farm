@@ -29,6 +29,10 @@ var last_aim := Vector2.ZERO
 var foot_t := 0.0
 var has_move_target := false
 var move_target := Vector2.ZERO
+var shield := 0
+var shield_t := 0.0
+var dash_time := 0.0
+var dash_dir := Vector2.ZERO
 
 
 func setup(game_ref: Node) -> void:
@@ -63,12 +67,23 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	attack_cd = maxf(0.0, attack_cd - delta)
 	invuln = maxf(0.0, invuln - delta)
+	shield_t = maxf(0.0, shield_t - delta)
+	if shield_t <= 0.0:
+		shield = 0
 	if hurt_flash > 0.0:
 		hurt_flash = maxf(0.0, hurt_flash - delta)
 		sprite.self_modulate = Color(1.0, 0.6, 0.6, 1.0) if int(hurt_flash * 20.0) % 2 == 0 else Color.WHITE
 	else:
 		sprite.self_modulate = Color.WHITE
 	if dead:
+		return
+	if dash_time > 0.0:
+		dash_time -= delta
+		velocity = dash_dir * 250.0
+		move_and_slide()
+		position.x = clampf(position.x, -8.0, 248.0)
+		position.y = clampf(position.y, -8.0, 136.0)
+		_animate(delta)
 		return
 	if not game.can_control():
 		velocity = Vector2.ZERO
@@ -195,6 +210,18 @@ func stop_moving() -> void:
 	has_move_target = false
 
 
+func start_dash(dir: Vector2) -> void:
+	dash_dir = dir.normalized()
+	dash_time = 0.16
+	invuln = maxf(invuln, 0.4)
+	has_move_target = false
+
+
+func add_shield(amount: int, duration: float) -> void:
+	shield = maxi(shield, amount)
+	shield_t = maxf(shield_t, duration)
+
+
 func _snap_facing(d: Vector2) -> Vector2:
 	if absf(d.x) > absf(d.y) * 1.3:
 		return Vector2.RIGHT if d.x > 0 else Vector2.LEFT
@@ -205,6 +232,14 @@ func _snap_facing(d: Vector2) -> Vector2:
 
 func hurt(amount: int, source: Node = null) -> void:
 	if dead or invuln > 0.0:
+		return
+	if shield > 0:
+		shield -= 1
+		invuln = 0.45
+		game.float_text("格挡", position + Vector2(0, -24), Color("#7ee3d4"), 9)
+		game.burst(position, Color("#7ee3d4"), 6)
+		if shield <= 0:
+			shield_t = 0.0
 		return
 	hp -= amount
 	invuln = 0.9 * GameData.diff_invuln()

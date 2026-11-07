@@ -590,6 +590,45 @@ def frog_sheet() -> Image.Image:
     return sheet
 
 
+def derp_frame(step: int) -> Image.Image:
+    im, d = new(16, 16)
+    bob = 1 if step else 0
+    body = (232, 205, 154, 255)
+    light = (248, 230, 184, 255)
+    dark = (190, 158, 112, 255)
+    ink = (38, 32, 38, 255)
+    beak = (226, 140, 58, 255)
+    disc(d, 8, 10 + bob, 6, 4.5, dark)
+    disc(d, 8, 9 + bob, 5.5, 4, body)
+    disc(d, 8, 11 + bob, 3.5, 2.5, light)
+    # messy tuft
+    px(d, 8, 3 + bob, dark)
+    px(d, 7, 4 + bob, body)
+    px(d, 9, 4 + bob, body)
+    # big derpy eyes
+    disc(d, 5, 8 + bob, 2, 2, C["white"])
+    disc(d, 10, 8 + bob, 2, 2, C["white"])
+    px(d, 5, 8 + bob, ink)
+    px(d, 11, 8 + bob, ink)
+    px(d, 4, 8 + bob, ink)
+    px(d, 10, 8 + bob, ink)
+    # beak and feet
+    px(d, 8, 10 + bob, beak)
+    px(d, 7, 10 + bob, beak)
+    box(d, 5, 14 + bob, 6, 14 + bob, ink)
+    box(d, 10, 14 + bob, 11, 14 + bob, ink)
+    if step:
+        px(d, 4, 9 + bob, (233, 156, 150, 255))
+    return im
+
+
+def derp_sheet() -> Image.Image:
+    sheet, _ = new(32, 16)
+    for i in range(2):
+        sheet.paste(derp_frame(i), (i * 16, 0))
+    return sheet
+
+
 def forage_shell() -> Image.Image:
     im, d = new(16, 16)
     shell = (238, 196, 164, 255)
@@ -1373,6 +1412,7 @@ def main() -> None:
     save(frog_sheet(), "chars", "frog.png")
     save(beetle_sheet(), "chars", "beetle.png")
     save(pet_whale_sheet(), "chars", "pet_whale.png")
+    save(derp_sheet(), "chars", "derp.png")
     save(forage_shell(), "items", "shell.png")
     save(forage_star(), "items", "star.png")
     save(shadow(), "chars", "shadow.png")
