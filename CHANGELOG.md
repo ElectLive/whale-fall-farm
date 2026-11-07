@@ -1,9 +1,9 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
 
-## v2.5.0 — 2026-10-30
+## v2.5.0 — 2026-11-07
 
 ### Added
 
@@ -280,3 +280,4 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 [v0.3.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v0.3.0
 [v0.2.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v0.2.0
 [v0.1.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v0.1.0
+
