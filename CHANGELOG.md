@@ -1,7 +1,15 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to Whale Fall Farm are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/); versions use semver.
+
+## v2.5.1 — 2026-11-07
+
+### Changed
+
+- **Only one pet per run**: title screen now has a 「宠物：小鲸鱼 / 呆瓜」 button; the choice is persisted and exactly one pet spawns.
+- HUD shows only the active pet's label; whale leveling and derp digging/bonking remain unchanged.
+- Selftest covers whale-only, derp-only and derp bonk paths.
 
 ## v2.5.0 — 2026-11-07
 
@@ -262,7 +270,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/); versions use sem
 - Fully procedural pixel art (Pillow), chiptune music and SFX (numpy), Cubic 11 font.
 - Headless self-test (`--selftest`), real-time smoke test (`--smoke`), screenshot tooling.
 
-[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.5.0...main
+[Unreleased]: https://github.com/ElectLive/whale-fall-farm/compare/v2.5.1...main
+[v2.5.1]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.5.1
 [v2.5.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.5.0
 [v2.4.1]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.1
 [v2.4.0]: https://github.com/ElectLive/whale-fall-farm/releases/tag/v2.4.0

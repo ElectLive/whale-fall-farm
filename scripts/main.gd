@@ -430,16 +430,20 @@ func start_new_run(seed_value: int = 0) -> void:
 	hud.refresh_hearts(player.hp, player.max_hp)
 	hud.set_difficulty(SaveGame.difficulty)
 
-	pet = PetWhale.new()
-	pet.setup(self)
-	pet.position = player.position + Vector2(-18, 10)
-	entities.add_child(pet)
-	hud.set_pet_level(1)
-
-	derp = DerpPet.new()
-	derp.setup(self)
-	derp.position = player.position + Vector2(20, 14)
-	entities.add_child(derp)
+	pet = null
+	derp = null
+	if SaveGame.pet_choice == 1:
+		derp = DerpPet.new()
+		derp.setup(self)
+		derp.position = player.position + Vector2(20, 14)
+		entities.add_child(derp)
+	else:
+		pet = PetWhale.new()
+		pet.setup(self)
+		pet.position = player.position + Vector2(-18, 10)
+		entities.add_child(pet)
+		hud.set_pet_level(1)
+	hud.set_active_pet(SaveGame.pet_choice)
 
 	state = State.DAY
 	day_setup()
@@ -2226,14 +2230,16 @@ func run_selftest() -> int:
 	_test_checks = 0
 	test_mode = true
 	var old_difficulty := SaveGame.difficulty
+	var old_pet_choice := SaveGame.pet_choice
 	SaveGame.difficulty = 1
+	SaveGame.pet_choice = 0
 
 	start_new_run(4242)
 	_check(state == State.DAY, "run starts in DAY state")
 	_check(farm.tiles.size() == GameData.FARM_W * GameData.FARM_H, "farm grid size")
 	_check(player != null, "player spawned")
-	_check(pet != null, "pet whale spawned")
-	_check(derp != null, "derp pet spawned")
+	_check(pet != null, "whale pet spawned")
+	_check(derp == null, "only one pet is carried")
 	_check(Engine.max_fps == 60, "fps cap is 60")
 	_check(gold == 18, "starting gold is 18")
 	SaveGame.difficulty = 2
@@ -2520,14 +2526,6 @@ func run_selftest() -> int:
 	phase_total = 34.0
 	phase_time = 20.0
 	night_queue.clear()
-	# derp pet bonks a nearby monster
-	if derp:
-		derp.position = Vector2(70, 52)
-		var bonk_target := _spawn_enemy_at("slime", Vector2(82, 52))
-		var bonk_hp := bonk_target.hp
-		derp_bonk(derp)
-		_check(bonk_target.hp < bonk_hp, "derp pet bonks nearby monsters")
-		bonk_target.take_damage(999, Vector2.RIGHT)
 	_spawn_boss()
 	_check(boss != null, "boss spawns")
 	_check(hud.boss_panel.visible, "boss hp bar visible")
@@ -2611,6 +2609,20 @@ func run_selftest() -> int:
 	SaveGame.difficulty = 1
 	start_new_run(4242)
 
+	# pet choice is exclusive
+	SaveGame.pet_choice = 1
+	start_new_run(4242)
+	_check(pet == null and derp != null, "derp is the exclusive pet choice")
+	state = State.NIGHT
+	derp.position = Vector2(70, 52)
+	var bonk_target := _spawn_enemy_at("slime", Vector2(82, 52))
+	var bonk_hp := bonk_target.hp
+	derp_bonk(derp)
+	_check(bonk_target.hp < bonk_hp, "derp pet bonks nearby monsters")
+	bonk_target.take_damage(999, Vector2.RIGHT)
+	SaveGame.pet_choice = 0
+	start_new_run(4242)
+
 	# save/load roundtrip in memory
 	var old_best := SaveGame.best_day
 	SaveGame.best_day = 9
@@ -2620,6 +2632,7 @@ func run_selftest() -> int:
 	_check(SaveGame.best_day == 9, "save/load roundtrip")
 	SaveGame.best_day = old_best
 	SaveGame.difficulty = old_difficulty
+	SaveGame.pet_choice = old_pet_choice
 	SaveGame.save_data()
 
 	test_mode = false

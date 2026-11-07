@@ -448,6 +448,19 @@ func set_pet_level(level: int) -> void:
 		pet_label.text = "小鲸鱼 Lv%d" % level
 
 
+func set_active_pet(index: int) -> void:
+	if pet_label == null or derp_label == null:
+		return
+	if index == 0:
+		pet_label.visible = true
+		derp_label.visible = false
+		pet_label.position = Vector2(22, 550)
+	else:
+		pet_label.visible = false
+		derp_label.visible = true
+		derp_label.position = Vector2(22, 550)
+
+
 func set_skills(energy: float, cds: Array, shield: int, resonance: int,
 		harvest_t: float = 0.0, moon_t: float = 0.0) -> void:
 	if energy_bar == null:
